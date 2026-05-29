@@ -1,0 +1,44 @@
+{
+  "name": "fokus",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A beautiful note-taking sanctuary for raw ideas",
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@tiptap/extension-mention": "^3.23.5",
+    "@tiptap/extension-task-item": "^3.23.5",
+    "@tiptap/extension-task-list": "^3.23.5",
+    "@tiptap/react": "^3.23.5",
+    "@tiptap/starter-kit": "^3.23.5",
+    "@tiptap/suggestion": "^3.23.5",
+    "@xyflow/react": "^12.10.2",
+    "framer-motion": "^12.39.0",
+    "idb-keyval": "^6.2.4",
+    "lucide-react": "^0.408.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tippy.js": "^6.3.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.6.0"
+  }
+}
