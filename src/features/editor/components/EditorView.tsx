@@ -1,10 +1,20 @@
-import { ChevronLeft, CheckCircle, Trash2, MoreHorizontal, X, FileText, Maximize2, Image as ImageIcon, Video, Type, Paperclip, Moon, Sun, Settings2, Music, File } from 'lucide-react';
+import { 
+  ChevronLeft, CheckCircle, Trash2, MoreHorizontal, X, FileText, Maximize2, 
+  Image as ImageIcon, Video, Type, Paperclip, Moon, Sun, Settings2, Music, File,
+  Bold, Italic, Underline as UnderlineIcon, Strikethrough, AlignLeft, AlignCenter, AlignRight, 
+  Heading1, Heading2, Heading3, List, ListOrdered, CheckSquare, Code, Quote, Minus, Download,
+  Undo2, Redo2, Pin, Search
+} from 'lucide-react';
 import { Note, Attachment } from '@/shared/lib/types';
 import { useState, useEffect, useRef } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import { Exporter } from '@/features/editor/lib/Exporter';
 import { SlashCommand } from '@/features/editor/tiptap/SlashCommand';
 import { PageExtension } from '@/features/editor/tiptap/PageExtension';
 import { EmbedExtension } from '@/features/editor/tiptap/EmbedExtension';
@@ -18,6 +28,7 @@ import EditorHeader from './EditorHeader';
 import DragHandleOverlay from './DragHandleOverlay';
 import { Column, ColumnBlock } from '@/features/editor/tiptap/ColumnExtension';
 import { BlockId } from '@/features/editor/tiptap/BlockIdExtension';
+import SearchModal from '@/shared/components/SearchModal';
 
 interface EditorViewProps {
   note: Note;
@@ -75,21 +86,48 @@ export default function EditorView({
   const [zenMode, setZenMode] = useState(initialZenMode);
   const [isDragging, setIsDragging] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  
   const attachMenuRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [anchorPositions, setAnchorPositions] = useState<Record<string, number>>({});
   const editorScrollRef = useRef<HTMLDivElement>(null);
 
-  // Close attach menu when clicking outside
+  // Ctrl+K global search shortcut
   useEffect(() => {
-    if (!showAttachMenu) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowSearch(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    if (!showAttachMenu && !showExportMenu) return;
     const handler = (e: MouseEvent) => {
       if (attachMenuRef.current && !attachMenuRef.current.contains(e.target as Node)) {
         setShowAttachMenu(false);
       }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [showAttachMenu]);
+  }, [showAttachMenu, showExportMenu]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, []);
 
   const backlinks = notes.filter(n => 
     n.id !== note.id && 
@@ -103,6 +141,11 @@ export default function EditorView({
       Column,
       StarterKit.configure({
         listItem: false,
+      }),
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right'],
       }),
       ZoomableListItem.configure({
         onZoomBullet: (title, node) => {
@@ -142,7 +185,12 @@ export default function EditorView({
     ],
     content: note.content,
     onUpdate: ({ editor }) => {
+      setIsSaving(true);
       onContentChange(editor.getHTML());
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        setIsSaving(false);
+      }, 800);
     },
     editorProps: {
       attributes: {
@@ -230,7 +278,7 @@ export default function EditorView({
 
   return (
     <div 
-      className={`absolute inset-0 z-40 flex flex-col animate-in slide-in-from-bottom-4 duration-300 transition-colors ${
+      className={`absolute inset-0 z-0 flex flex-col animate-in slide-in-from-bottom-4 duration-300 transition-colors ${
         zenMode 
           ? (themeMode === 'dark' ? 'bg-neutral-900' : 'bg-[#F9F8F6]') 
           : (themeMode === 'dark' ? 'bg-neutral-900/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md')
@@ -284,15 +332,73 @@ export default function EditorView({
 
             <div className="w-px h-4 bg-white/15 mx-0.5 hidden md:block" />
 
+            {/* Auto-save Status */}
+            <span className="text-white/40 text-xs font-semibold px-2 flex items-center gap-1.5 whitespace-nowrap">
+              <span className={`w-1.5 h-1.5 rounded-full ${isSaving ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
+              {isSaving ? 'Saving...' : 'Saved'}
+            </span>
+
+            <div className="w-px h-4 bg-white/15 mx-0.5" />
+
+            {/* Search */}
+            <button
+              onClick={() => setShowSearch(true)}
+              title="Search notes (Ctrl+K)"
+              className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            <div className="w-px h-4 bg-white/15 mx-0.5" />
+
             {/* Focus mode */}
             <button
               onClick={() => setZenMode(true)}
               title="Focus Mode"
               className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full
-                         bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all"
+                         bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all mr-1.5"
             >
               Focus
             </button>
+
+            {/* Export Menu Dropdown */}
+            <div className="relative" ref={exportMenuRef}>
+              <button
+                onClick={() => setShowExportMenu(prev => !prev)}
+                title="Export"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all
+                  ${showExportMenu
+                    ? 'bg-[#FF7D54]/90 text-white'
+                    : 'bg-white/10 hover:bg-white/20 text-white/70 hover:text-white'
+                  }`}
+              >
+                <Download size={11} />
+                <span>Export</span>
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute top-full right-0 mt-2 z-50
+                                bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-1.5
+                                min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <p className="text-[8px] font-bold uppercase tracking-widest text-white/30 px-2.5 pt-1.5 pb-2">Export formats</p>
+                  {[
+                    { label: 'Plain Text (.txt)', action: () => Exporter.toTXT(note) },
+                    { label: 'Markdown (.md)',   action: () => Exporter.toMarkdown(note) },
+                    { label: 'MS Word (.docx)',  action: () => Exporter.toDOCX(note) },
+                    { label: 'PDF Document',     action: () => Exporter.toPDF(note) },
+                  ].map(({ label, action }) => (
+                    <button
+                      key={label}
+                      onClick={() => { action(); setShowExportMenu(false); }}
+                      className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors text-xs font-medium text-left"
+                    >
+                      <FileText size={12} className="text-indigo-400 shrink-0" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="w-px h-4 bg-white/15 mx-0.5" />
 
@@ -412,11 +518,7 @@ export default function EditorView({
                  }}
                >
                   <AttachmentNode 
-                     data={{ 
-                       attachment: att, 
-                       onPreview: setPreviewAttachment, 
-                       onRemove: onRemoveAttachment 
-                     }} 
+                     attachment={att as any} 
                   />
                   <button 
                      onClick={() => onNoteChange({ ...note, attachments: note.attachments!.map(a => a.id === att.id ? { ...a, zIndex: a.zIndex === -1 ? 10 : -1 } : a) })}
@@ -427,6 +529,121 @@ export default function EditorView({
                </div>
              )
           })}
+
+          {editor && (
+            <BubbleMenu 
+              editor={editor} 
+              className="flex items-center gap-1 bg-neutral-950/95 border border-neutral-880/60 rounded-xl px-2 py-1.5 shadow-2xl z-50 transition-all duration-200"
+            >
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('bold') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Bold"
+              >
+                <Bold size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('italic') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Italic"
+              >
+                <Italic size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('underline') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Underline"
+              >
+                <UnderlineIcon size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('strike') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Strikethrough"
+              >
+                <Strikethrough size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleCode().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('code') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Inline Code"
+              >
+                <Code size={13} />
+              </button>
+
+              <div className="w-px h-4 bg-neutral-800 mx-1" />
+
+              <button
+                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Heading 1"
+              >
+                <Heading1 size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Heading 2"
+              >
+                <Heading2 size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Heading 3"
+              >
+                <Heading3 size={13} />
+              </button>
+
+              <div className="w-px h-4 bg-neutral-800 mx-1" />
+
+              <button
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('bulletList') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Bullet List"
+              >
+                <List size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('orderedList') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Numbered List"
+              >
+                <ListOrdered size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleTaskList().run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('taskList') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Todo Checklist"
+              >
+                <CheckSquare size={13} />
+              </button>
+
+              <div className="w-px h-4 bg-neutral-800 mx-1" />
+
+              <button
+                onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Align Left"
+              >
+                <AlignLeft size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Align Center"
+              >
+                <AlignCenter size={13} />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
+                title="Align Right"
+              >
+                <AlignRight size={13} />
+              </button>
+            </BubbleMenu>
+          )}
 
           <div className={`flex-1 min-h-[400px] prose prose-lg max-w-none focus:outline-none ${themeMode === 'dark' ? 'prose-invert text-neutral-300' : 'text-gray-800'}`}>
             <EditorContent editor={editor} />
@@ -495,6 +712,19 @@ export default function EditorView({
 
       {previewAttachment && (
         <Lightbox attachment={previewAttachment} onClose={() => setPreviewAttachment(null)} />
+      )}
+
+      {/* Global Search Modal */}
+      {showSearch && (
+        <SearchModal
+          notes={notes}
+          themeMode={themeMode}
+          onOpenNote={(selectedNote) => {
+            onOpenNote(selectedNote.id);
+            setShowSearch(false);
+          }}
+          onClose={() => setShowSearch(false)}
+        />
       )}
 
       <input type="file" accept="image/*" className="hidden" ref={imageInputRef} onChange={onImageUpload} />

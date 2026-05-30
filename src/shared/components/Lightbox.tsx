@@ -126,16 +126,27 @@ export default function Lightbox({ attachment, note, onClose }: LightboxProps) {
         )}
 
         {attachment?.type === 'image' && (
-          <img
-            src={attachment?.data}
-            alt={attachment?.name}
-            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300 select-none"
+          <div
+            className="bg-white p-4 pb-14 rounded-none shadow-[0_25px_60px_rgba(0,0,0,0.35)] flex flex-col items-center max-w-[85vw] max-h-[80vh] relative select-none animate-in zoom-in-95 duration-300"
             style={{
-              transform: `scale(${scale}) rotate(${rotation}deg)`,
+              transform: `scale(${scale}) rotate(${rotation - 1.5}deg)`,
               transition: 'transform 0.25s cubic-bezier(0.2,0.8,0.2,1)',
             }}
-            draggable={false}
-          />
+          >
+            {/* Top Tape overlay */}
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-28 h-6 bg-white/45 backdrop-blur-sm shadow-sm rotate-[3deg] z-10 pointer-events-none border border-white/10" />
+            
+            <img
+              src={attachment?.data}
+              alt={attachment?.name}
+              className="max-w-full max-h-[60vh] object-contain bg-gray-50 border border-black/5"
+              draggable={false}
+            />
+            {/* File name printed in the white margin at the bottom */}
+            <div className="mt-4 md:mt-5 text-sm md:text-base font-extrabold text-slate-500 uppercase tracking-widest text-center truncate max-w-full px-4">
+              {attachment?.name || 'Polaroid Image'}
+            </div>
+          </div>
         )}
 
         {attachment?.type === 'video' && (

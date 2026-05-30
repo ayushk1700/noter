@@ -40,7 +40,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] Clean Code First: Design favors small focused modules with clear naming and single responsibility.
+- [ ] TypeScript Required: All planned source implementation paths are TypeScript.
+- [ ] TDD Mandatory: Test plan explicitly states red-green-refactor sequence for each behavior change.
+- [ ] Functional React Only: UI design uses function components + hooks, no class components.
+- [ ] No External UI Libraries: Plan does not introduce third-party UI component suites.
 
 ## Project Structure
 

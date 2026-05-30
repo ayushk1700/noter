@@ -71,7 +71,7 @@ export default function EditorHeader({ note, onNoteChange, themeMode }: EditorHe
       {note.coverImage ? (
         <div 
           ref={coverRef}
-          className="w-full h-64 relative group/cover cursor-ns-resize overflow-hidden"
+          className="w-full h-80 md:h-96 relative group/cover cursor-ns-resize overflow-hidden"
           onMouseDown={handleDragStart}
         >
           <img 
@@ -112,7 +112,7 @@ export default function EditorHeader({ note, onNoteChange, themeMode }: EditorHe
         </div>
       )}
 
-      <div className={`px-12 max-w-[900px] mx-auto w-full relative ${note.coverImage ? '-mt-12' : 'mt-4'}`}>
+      <div className={`px-12 max-w-[900px] mx-auto w-full relative ${note.coverImage ? '-mt-24' : 'mt-4'}`}>
         {/* Floating Icon */}
         <div className="relative group/icon mb-4 w-max">
           {note.icon ? (
@@ -126,7 +126,7 @@ export default function EditorHeader({ note, onNoteChange, themeMode }: EditorHe
               </button>
             </div>
           ) : (
-             <div className={`transition-opacity duration-300 ${note.coverImage ? 'absolute -top-8' : ''}`}>
+             <div className={`transition-opacity duration-300 ${note.coverImage ? 'absolute -top-12' : ''}`}>
                <button 
                  onClick={() => onNoteChange({ ...note, icon: '📄' })}
                  className="text-sm font-medium text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2 transition-colors px-3 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-800"

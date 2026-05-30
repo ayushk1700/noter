@@ -1,4 +1,8 @@
+import React, { useState } from 'react';
 import { Note } from '@/shared/lib/types';
+import NoteCardActionMenu from '@/shared/components/NoteCardActionMenu';
+import AttachmentNode from '@/features/workspace/components/AttachmentNode';
+import Lightbox from '@/shared/components/Lightbox';
 import {
   ImageIcon, Video, Paperclip, Mic,
   MoreHorizontal, Pin, Copy, Trash2, Share2,
@@ -13,6 +17,7 @@ interface NoteNodeProps {
     onNoteDuplicate?: (note: Note) => void;
     onNoteCopyLink?: (noteId: string) => void;
     onNotePin?: (noteId: string) => void;
+    onNoteChangeColor?: (color: string) => void;
   };
   /** Passed by ZenCanvasNoteCard when used as renderItemContent */
   isAbstracted?: boolean;
@@ -39,15 +44,27 @@ function stripHtml(html: string): string {
 
 // ─── Stacked sticky image thumbnails positions ───────────────────────────────
 const STACK_STYLES = [
-  { transform: 'translate(0px, 0px) rotate(11deg)',  zIndex: 30 },
-  { transform: 'translate(-7px, 5px) rotate(-5deg)', zIndex: 20 },
-  { transform: 'translate(-12px, -3px) rotate(7deg)',zIndex: 10 },
+  'translate(0px, 0px) rotate(11deg)',
+  'translate(-7px, 5px) rotate(-5deg)',
+  'translate(-12px, -3px) rotate(7deg)',
 ];
+
+const HOVER_STACK_STYLES = [
+  'translate(16px, -18px) rotate(16deg)',
+  'translate(-6px, -24px) rotate(-8deg)',
+  'translate(-26px, -10px) rotate(4deg)',
+];
+
+const STACK_Z_INDICES = [30, 20, 10];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function NoteNode({ data, isAbstracted = false }: NoteNodeProps) {
-  const { note, onNoteClick, onNoteDelete, onNoteDuplicate, onNoteCopyLink, onNotePin } = data;
+  const { note, onNoteClick, onNoteDelete, onNoteDuplicate, onNoteCopyLink, onNotePin, onNoteChangeColor } = data;
+
+  const [isCardHovered, setIsCardHovered] = useState(false);
+  const [hoveredThumbId, setHoveredThumbId] = useState<string | null>(null);
+  const [activeLightboxAttachment, setActiveLightboxAttachment] = useState<any | null>(null);
 
   const imageAttachments  = note.attachments?.filter(a => a.type === 'image') ?? [];
   const videoAttachments  = note.attachments?.filter(a => a.type === 'video') ?? [];
@@ -78,136 +95,123 @@ export default function NoteNode({ data, isAbstracted = false }: NoteNodeProps) 
 
   // --- ACTION MENU EXTRACTED FOR REUSE ---
   const renderActionButtons = () => (
-    <div className="absolute top-2 right-2 z-50 group/menu pointer-events-auto">
-      <button
-        className="p-1 text-white/70 hover:text-white hover:bg-white/15 rounded-full transition-all opacity-0 group-hover:opacity-100 group-hover/menu:opacity-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <MoreHorizontal size={16} />
-      </button>
-
-      <div
-        className="absolute right-full top-0 mr-1 flex items-center gap-0.5
-                   bg-gray-900/95 backdrop-blur-md p-1 rounded-full shadow-xl
-                   transition-all duration-250 origin-right
-                   scale-50 opacity-0 invisible translate-x-3
-                   group-hover/menu:scale-100 group-hover/menu:opacity-100 group-hover/menu:visible group-hover/menu:translate-x-0"
-      >
-        <button
-          title={note.isPinned ? 'Unpin' : 'Pin'}
-          className={`p-1.5 rounded-full transition-colors ${note.isPinned ? 'bg-[#FF7D54] text-white hover:bg-[#e06945]' : 'hover:bg-white/15 text-white'}`}
-          onClick={(e) => { e.stopPropagation(); onNotePin?.(note.id); }}
-        >
-          <Pin size={12} className={note.isPinned ? 'fill-current' : ''} />
-        </button>
-        <button
-          title="Duplicate"
-          className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-          onClick={(e) => { e.stopPropagation(); onNoteDuplicate?.(note); }}
-        >
-          <Copy size={12} />
-        </button>
-        <button
-          title="Copy Link"
-          className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-          onClick={(e) => { e.stopPropagation(); onNoteCopyLink?.(note.id); }}
-        >
-          <Share2 size={12} />
-        </button>
-        <div className="w-px h-3.5 bg-gray-600 mx-0.5" />
-        <button
-          title="Delete"
-          className="p-1.5 hover:bg-red-500/20 rounded-full text-red-400 hover:text-red-300 transition-colors"
-          onClick={(e) => { e.stopPropagation(); onNoteDelete?.(note.id); }}
-        >
-          <Trash2 size={12} />
-        </button>
-      </div>
-    </div>
+    <NoteCardActionMenu
+      id={note.id}
+      isPinned={note.isPinned}
+      color={note.color}
+      onChangeColor={onNoteChangeColor}
+      onOpen={() => onNoteClick(note)}
+      onPin={() => onNotePin?.(note.id)}
+      onDuplicate={() => onNoteDuplicate?.(note)}
+      onCopyLink={() => onNoteCopyLink?.(note.id)}
+      onDelete={() => onNoteDelete?.(note.id)}
+      className="absolute top-2 right-2 z-50"
+    />
   );
 
   if (isStandaloneMedia && note.attachments) {
     const att = note.attachments[0];
     return (
-      <div className="relative group w-full h-full rounded-[1.5rem] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.05)] bg-white border border-black/5" onClick={() => onNoteClick(note)}>
-        
-        {/* Full Bleed Media Content */}
-        <div className="w-full h-full bg-gray-100 flex items-center justify-center relative">
-          {att.type === 'image' ? (
-            <img src={att.data} alt="" className="w-full h-full object-cover" />
-          ) : att.type === 'video' ? (
-            <div className="w-full aspect-video bg-black flex items-center justify-center relative group/video overflow-hidden">
-              <video 
-                src={att.data} 
-                className="w-full h-full object-cover opacity-60 group-hover/video:opacity-90 transition-opacity duration-500" 
-                muted 
-                loop 
-                playsInline
-                onMouseEnter={(e) => e.currentTarget.play().catch(() => {})} 
-                onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }} 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none opacity-80" />
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                 <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-2xl group-hover/video:scale-110 group-hover/video:bg-white/20 transition-all duration-300">
-                   <Play size={28} className="text-white ml-1 drop-shadow-md" fill="currentColor" />
-                 </div>
-              </div>
-            </div>
-          ) : att.type === 'audio' ? (
-            <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex flex-col items-center justify-center relative text-white">
-              <Mic size={48} className="text-white/80 drop-shadow-md mb-4" />
-              <p className="font-bold text-sm opacity-90 truncate max-w-[80%]">{att.name}</p>
-            </div>
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center relative">
-              <Paperclip size={48} className="text-gray-400 mb-4" />
-              <p className="font-bold text-sm text-gray-600 truncate max-w-[80%]">{att.name}</p>
-            </div>
-          )}
-        </div>
+      <div 
+        className="relative group w-full h-full rounded-[1.5rem] overflow-visible shadow-[0_10px_30px_rgba(0,0,0,0.05)] bg-white border border-black/5 cursor-pointer" 
+        onClick={(e) => {
+          e.stopPropagation();
+          setActiveLightboxAttachment(att as any);
+        }}
+      >
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center relative rounded-[1.5rem] overflow-hidden">
+            {att.type === 'image' ? (
+              <img src={att.data} alt={att.name || ''} className="w-full h-full object-cover" />
+            ) : (
+              <AttachmentNode attachment={att as any} className="w-full h-full" />
+            )}
+          </div>
 
-        {renderActionButtons()}
+          {renderActionButtons()}
 
-        {/* Footer Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-black/50 to-transparent pointer-events-none flex justify-between items-end">
-          <span className="text-[10px] font-bold text-white px-3 py-1 bg-black/40 backdrop-blur-md rounded-full shadow-sm">{note.date}</span>
+          {/* Footer Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-black/60 to-transparent pointer-events-none flex justify-between items-end rounded-b-[1.5rem] overflow-hidden">
+            <span className="text-[10px] font-bold text-white px-3 py-1 bg-black/40 backdrop-blur-md rounded-full shadow-sm">{note.date}</span>
+          </div>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="relative group" style={{ width: '100%', height: '100%' }}>
+    <div
+      className="relative group"
+      style={{ width: '100%', height: '100%' }}
+      onMouseEnter={() => setIsCardHovered(true)}
+      onMouseLeave={() => {
+        setIsCardHovered(false);
+        setHoveredThumbId(null);
+      }}
+    >
 
-      {/* ── Stacked sticky thumbnails ── */}
-      {note.attachments && note.attachments.slice(0, 3).map((att, idx) => (
-        <div
-          key={att.id}
-          className="absolute -right-3 -top-3 w-14 h-14 bg-white p-1 shadow-xl rounded-sm border border-gray-200
-                     transition-all duration-300 group-hover:scale-110 pointer-events-none origin-bottom-left"
-          style={{ ...STACK_STYLES[idx], zIndex: STACK_STYLES[idx].zIndex }}
-        >
-          <div className="w-full h-full bg-gray-100 overflow-hidden relative flex items-center justify-center">
-            {att.type === 'image' ? (
-              <img
-                src={att.data}
-                alt=""
-                className="w-full h-full object-cover"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
-            ) : att.type === 'video' ? (
-              <Video size={20} className="text-gray-400 opacity-80" />
-            ) : att.type === 'audio' ? (
-              <Mic size={20} className="text-gray-400 opacity-80" />
-            ) : (
-              <Paperclip size={20} className="text-gray-400 opacity-80" />
+      {/* ── Stacked sticky thumbnails (Fanning Mini-Polaroids) ── */}
+      {note.attachments && note.attachments.slice(0, 3).map((att, idx) => {
+        const isHoveredSelf = hoveredThumbId === att.id;
+        const currentTransform = isHoveredSelf
+          ? `${isCardHovered ? HOVER_STACK_STYLES[idx] : STACK_STYLES[idx]} scale(1.35) rotate(0deg)`
+          : (isCardHovered ? HOVER_STACK_STYLES[idx] : STACK_STYLES[idx]);
+
+        return (
+          <div
+            key={att.id}
+            onMouseEnter={() => setHoveredThumbId(att.id)}
+            onMouseLeave={() => setHoveredThumbId(null)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveLightboxAttachment(att as any);
+            }}
+            className="absolute -right-3 -top-3 w-14 h-16 bg-white p-1 pb-3 shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-gray-200/80 rounded-none
+                       transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] pointer-events-auto origin-bottom-left cursor-pointer z-10"
+            style={{
+              transform: currentTransform,
+              zIndex: isHoveredSelf ? 90 : STACK_Z_INDICES[idx],
+            }}
+          >
+            <div className="w-full h-full bg-gray-100 overflow-hidden relative flex items-center justify-center">
+              {att.type === 'image' ? (
+                <img
+                  src={att.data}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : att.type === 'video' ? (
+                <Video size={16} className="text-gray-400 opacity-80" />
+              ) : att.type === 'audio' ? (
+                <Mic size={16} className="text-gray-400 opacity-80" />
+              ) : (
+                <Paperclip size={16} className="text-gray-400 opacity-80" />
+              )}
+              
+              {/* Decorative tape strip */}
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-6 h-2 bg-white/60 backdrop-blur-sm -rotate-6 rounded-sm" />
+            </div>
+
+            {/* Gorgeous Floating Polaroid Card Preview */}
+            {att.type === 'image' && isHoveredSelf && (
+              <div
+                className="absolute bottom-full right-0 mb-4 w-44 bg-white p-2 pb-5 rounded-none shadow-[0_15px_40px_rgba(0,0,0,0.18)] border border-slate-100/50 flex flex-col items-center rotate-[-2deg] pointer-events-none z-[100] animate-in fade-in zoom-in-95 duration-200"
+              >
+                {/* Tape strip overlay */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-4 bg-white/40 backdrop-blur-sm shadow-sm rotate-[4deg]" />
+                
+                <img
+                  src={att.data}
+                  alt={att.name}
+                  className="w-full h-36 object-cover bg-gray-50 border border-black/5"
+                />
+                <div className="mt-3 text-[10px] font-semibold text-gray-500 uppercase tracking-widest text-center truncate w-full px-1">
+                  {att.name || 'Polaroid'}
+                </div>
+              </div>
             )}
-            
-            {/* Decorative tape strip */}
-            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-6 h-2 bg-white/60 backdrop-blur-sm -rotate-6 rounded-sm" />
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* ── Node container ── */}
       <div
@@ -243,53 +247,7 @@ export default function NoteNode({ data, isAbstracted = false }: NoteNodeProps) 
             </div>
 
             {/* Quick-action hover bubble */}
-            <div className="absolute right-0 top-0 z-30 group/menu">
-              <button
-                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-black/5 rounded-full transition-all opacity-0 group-hover:opacity-100 group-hover/menu:opacity-100"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal size={16} />
-              </button>
-
-              {/* Horizontal pill popup */}
-              <div
-                className={`absolute right-full top-0 mr-1 flex items-center gap-0.5
-                             bg-gray-900/95 backdrop-blur-md p-1 rounded-full shadow-xl
-                             transition-all duration-250 origin-right
-                             scale-50 opacity-0 invisible translate-x-3
-                             group-hover/menu:scale-100 group-hover/menu:opacity-100 group-hover/menu:visible group-hover/menu:translate-x-0`}
-              >
-                <button
-                  title={note.isPinned ? "Unpin" : "Pin"}
-                  className={`p-1.5 rounded-full transition-colors ${note.isPinned ? 'bg-[#FF7D54] text-white hover:bg-[#e06945]' : 'hover:bg-white/15 text-white'}`}
-                  onClick={(e) => { e.stopPropagation(); onNotePin?.(note.id); }}
-                >
-                  <Pin size={12} className={note.isPinned ? 'fill-current' : ''} />
-                </button>
-                <button
-                  title="Duplicate"
-                  className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onNoteDuplicate?.(note); }}
-                >
-                  <Copy size={12} />
-                </button>
-                <button
-                  title="Copy Link"
-                  className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onNoteCopyLink?.(note.id); }}
-                >
-                  <Share2 size={12} />
-                </button>
-                <div className="w-px h-3.5 bg-gray-600 mx-0.5" />
-                <button
-                  title="Delete"
-                  className="p-1.5 hover:bg-red-500/20 rounded-full text-red-400 hover:text-red-300 transition-colors"
-                  onClick={(e) => { e.stopPropagation(); onNoteDelete?.(note.id); }}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
+            {renderActionButtons()}
           </div>
 
           {/* ── Content preview ── */}
@@ -402,6 +360,13 @@ export default function NoteNode({ data, isAbstracted = false }: NoteNodeProps) 
         </div>
 
       </div>
+
+      {activeLightboxAttachment && (
+        <Lightbox
+          attachment={activeLightboxAttachment}
+          onClose={() => setActiveLightboxAttachment(null)}
+        />
+      )}
     </div>
   );
 }

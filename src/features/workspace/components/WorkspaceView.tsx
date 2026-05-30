@@ -1,9 +1,13 @@
-import { Search, Plus, FileText, ImageIcon, Video, Paperclip, Calendar, MoreHorizontal, ChevronLeft, Folder, LayoutGrid, Map, Moon, Sun, Maximize2, Settings2, X, Mic, Pin, Copy, Share2, Trash2 } from 'lucide-react';
+import { Plus, FileText, ImageIcon, Video, Paperclip, Calendar, MoreHorizontal, ChevronLeft, Folder, LayoutGrid, Map, PanelRight, X, Mic, Pin, Copy, Share2, Trash2, Maximize2 } from 'lucide-react';
 import { Note } from '@/shared/lib/types';
-import { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import ZenCanvas, { ZenCanvasItem, ZenCanvasConnection } from '@/features/workspace/components/ZenCanvas';
 import NoteNode from '@/features/workspace/components/NoteNode';
+import AttachmentNode from '@/features/workspace/components/AttachmentNode';
+import NoteCardActionMenu from '@/shared/components/NoteCardActionMenu';
 import GlobalNavbar from '@/shared/components/GlobalNavbar';
+import NavbarSearch from '@/shared/components/NavbarSearch';
+import RightPanel from '@/shared/components/RightPanel';
 
 interface WorkspaceViewProps {
   notes: Note[];
@@ -16,11 +20,9 @@ interface WorkspaceViewProps {
   onNoteCreate?: (note: Note) => void;
   onNoteDelete?: (noteId: string) => void;
   themeMode?: 'light' | 'dark';
-  isChronoEnabled?: boolean;
   workspaceMode: 'grid' | 'canvas';
   setWorkspaceMode: (mode: 'grid' | 'canvas') => void;
   onToggleTheme?: () => void;
-  onToggleChrono?: () => void;
 }
 
 export default function WorkspaceView({
@@ -34,16 +36,28 @@ export default function WorkspaceView({
   onNoteCreate,
   onNoteDelete,
   themeMode = 'light',
-  isChronoEnabled = false,
   workspaceMode,
   setWorkspaceMode,
   onToggleTheme,
-  onToggleChrono,
 }: WorkspaceViewProps) {
   
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [previewNoteId, setPreviewNoteId] = useState<string | null>(null);
   const previewNote = notes.find(n => n.id === previewNoteId);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
+
+  // Global Ctrl+K shortcut to open search
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
   
   // Note: For ZenCanvas we use the raw notes directly to allow dragging them anywhere.
   // We'll also calculate parent-child connections.
@@ -78,6 +92,12 @@ export default function WorkspaceView({
           const n = notes.find(n => n.id === noteId);
           if (n) {
             onNoteChange({ ...n, isPinned: !n.isPinned });
+          }
+        },
+        onNoteChangeColor: (color: string) => {
+          const n = notes.find(n => n.id === note.id);
+          if (n) {
+            onNoteChange({ ...n, color });
           }
         },
       }
@@ -202,10 +222,18 @@ export default function WorkspaceView({
 
           <div className="w-px h-4 bg-white/15 mx-1" />
 
-          {/* Search (Icon only for pill) */}
-          <button className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors" title="Search">
-            <Search className="w-4 h-4" />
-          </button>
+          {/* Search — inline expanding Dynamic Island style */}
+          <NavbarSearch
+            notes={notes}
+            themeMode={themeMode}
+            onOpenNote={(note) => {
+              onNoteClick(note);
+              setShowSearch(false);
+            }}
+            isOpen={showSearch}
+            onOpen={() => setShowSearch(true)}
+            onClose={() => setShowSearch(false)}
+          />
 
           <div className="w-px h-4 bg-white/15 mx-1" />
 
@@ -227,19 +255,17 @@ export default function WorkspaceView({
 
           <div className="w-px h-4 bg-white/15 mx-1 hidden md:block" />
 
-          {/* Chrono */}
-          {onToggleChrono && (
-            <button 
-              onClick={onToggleChrono}
-              className={`p-2 rounded-full transition-all ${isChronoEnabled ? 'bg-indigo-500/80 text-white' : 'hover:bg-white/10 text-white/40 hover:text-white/80'}`}
-              title="Chrono Mode"
-            >
-              <Settings2 className="w-4 h-4" />
-            </button>
-          )}
+          {/* Right Panel Toggle */}
+          <button
+            onClick={() => setShowRightPanel(prev => !prev)}
+            className={`p-2 rounded-full transition-all ${showRightPanel ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/40 hover:text-white/80'}`}
+            title="Notes Panel"
+          >
+            <PanelRight className="w-4 h-4" />
+          </button>
 
           {/* Calendar */}
-          <button 
+          <button
             onClick={onCalendar}
             className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
             title="Calendar"
@@ -247,6 +273,14 @@ export default function WorkspaceView({
             <Calendar className="w-4 h-4" />
           </button>
       </GlobalNavbar>
+
+      {/* Collapsible Right Panel */}
+      <RightPanel
+        isOpen={showRightPanel}
+        onClose={() => setShowRightPanel(false)}
+        onOpenNote={(note) => onNoteClick(note)}
+        themeMode={themeMode}
+      />
 
       {/* Main Content */}
       <div id="workspace-scroll-container" className="flex-1 overflow-y-auto relative">
@@ -285,7 +319,7 @@ export default function WorkspaceView({
               }}
               onNewNoteClick={() => onNewNote()}
               themeMode={themeMode}
-              isChronoEnabled={isChronoEnabled}
+              isChronoEnabled={false}
               renderItemContent={(item, isAbstracted) => (
                 <NoteNode
                   data={item.data as any}
@@ -342,58 +376,31 @@ export default function WorkspaceView({
                             </div>
                             
                             {/* Hover Actions */}
-                            <div className="absolute right-0 top-0 z-30 group/menu">
-                              <button
-                                className="p-1 text-gray-400 hover:text-gray-700 hover:bg-black/5 rounded-full transition-all opacity-0 group-hover:opacity-100 group-hover/menu:opacity-100"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreHorizontal size={16} />
-                              </button>
-
-                              <div
-                                className="absolute right-full top-0 mr-1 flex items-center gap-0.5
-                                           bg-gray-900/95 backdrop-blur-md p-1 rounded-full shadow-xl
-                                           transition-all duration-250 origin-right
-                                           scale-50 opacity-0 invisible translate-x-3
-                                           group-hover/menu:scale-100 group-hover/menu:opacity-100 group-hover/menu:visible group-hover/menu:translate-x-0"
-                              >
-                                <button
-                                  title={note.isPinned ? 'Unpin' : 'Pin'}
-                                  className={`p-1.5 rounded-full transition-colors ${note.isPinned ? 'bg-[#FF7D54] text-white hover:bg-[#e06945]' : 'hover:bg-white/15 text-white'}`}
-                                  onClick={(e) => { e.stopPropagation(); onNoteChange({ ...note, isPinned: !note.isPinned }); }}
-                                >
-                                  <Pin size={12} className={note.isPinned ? 'fill-current' : ''} />
-                                </button>
-                                <button
-                                  title="Duplicate"
-                                  className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onNoteCreate) onNoteCreate({ ...note, id: Date.now().toString(), title: `${note.title} (copy)`, updatedAt: Date.now() });
-                                  }}
-                                >
-                                  <Copy size={12} />
-                                </button>
-                                <button
-                                  title="Copy Link"
-                                  className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-                                  onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`noter://note/${note.id}`); }}
-                                >
-                                  <Share2 size={12} />
-                                </button>
-                                <div className="w-px h-3.5 bg-gray-600 mx-0.5" />
-                                <button
-                                  title="Delete"
-                                  className="p-1.5 hover:bg-red-500/20 rounded-full text-red-400 hover:text-red-300 transition-colors"
-                                  onClick={(e) => { e.stopPropagation(); if (onNoteDelete) onNoteDelete(note.id); }}
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            </div>
+                            <NoteCardActionMenu
+                              id={note.id}
+                              isPinned={note.isPinned}
+                              color={note.color}
+                              onChangeColor={(color) => onNoteChange({ ...note, color })}
+                              onPin={() => onNoteChange({ ...note, isPinned: !note.isPinned })}
+                              onDuplicate={() => {
+                                if (onNoteCreate) onNoteCreate({ ...note, id: Date.now().toString(), title: `${note.title} (copy)`, updatedAt: Date.now() });
+                              }}
+                              onOpen={() => onNoteClick(note)}
+                              onCopyLink={() => {
+                                navigator.clipboard.writeText(`noter://note/${note.id}`);
+                              }}
+                              onDelete={() => { if (onNoteDelete) onNoteDelete(note.id); }}
+                              className="absolute right-0 top-0 z-30"
+                            />
                           </div>
+                          {note.attachments && note.attachments.length > 0 && (
+                            <div className="mb-4 rounded-xl overflow-hidden">
+                              <AttachmentNode attachment={note.attachments[0] as any} className="w-full h-40 object-cover rounded-xl" />
+                            </div>
+                          )}
+
                           <div className="text-base text-gray-500 line-clamp-4 leading-relaxed flex-1 font-medium overflow-hidden" dangerouslySetInnerHTML={{ __html: note.content || 'Start typing...' }} />
-                          
+
                           <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                             <span className="text-xs font-medium text-gray-400">{note.date}</span>
                             {note.attachments && note.attachments.length > 0 && (
@@ -433,58 +440,31 @@ export default function WorkspaceView({
                       </div>
                       
                       {/* Hover Actions */}
-                      <div className="absolute right-0 top-0 z-30 group/menu">
-                        <button
-                          className="p-1 text-gray-400 hover:text-gray-700 hover:bg-black/5 rounded-full transition-all opacity-0 group-hover:opacity-100 group-hover/menu:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
-
-                        <div
-                          className="absolute right-full top-0 mr-1 flex items-center gap-0.5
-                                     bg-gray-900/95 backdrop-blur-md p-1 rounded-full shadow-xl
-                                     transition-all duration-250 origin-right
-                                     scale-50 opacity-0 invisible translate-x-3
-                                     group-hover/menu:scale-100 group-hover/menu:opacity-100 group-hover/menu:visible group-hover/menu:translate-x-0"
-                        >
-                          <button
-                            title={note.isPinned ? 'Unpin' : 'Pin'}
-                            className={`p-1.5 rounded-full transition-colors ${note.isPinned ? 'bg-[#FF7D54] text-white hover:bg-[#e06945]' : 'hover:bg-white/15 text-white'}`}
-                            onClick={(e) => { e.stopPropagation(); onNoteChange({ ...note, isPinned: !note.isPinned }); }}
-                          >
-                            <Pin size={12} className={note.isPinned ? 'fill-current' : ''} />
-                          </button>
-                          <button
-                            title="Duplicate"
-                            className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onNoteCreate) onNoteCreate({ ...note, id: Date.now().toString(), title: `${note.title} (copy)`, updatedAt: Date.now() });
-                            }}
-                          >
-                            <Copy size={12} />
-                          </button>
-                          <button
-                            title="Copy Link"
-                            className="p-1.5 hover:bg-white/15 rounded-full text-white transition-colors"
-                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`noter://note/${note.id}`); }}
-                          >
-                            <Share2 size={12} />
-                          </button>
-                          <div className="w-px h-3.5 bg-gray-600 mx-0.5" />
-                          <button
-                            title="Delete"
-                            className="p-1.5 hover:bg-red-500/20 rounded-full text-red-400 hover:text-red-300 transition-colors"
-                            onClick={(e) => { e.stopPropagation(); if (onNoteDelete) onNoteDelete(note.id); }}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
+                      <NoteCardActionMenu
+                        id={note.id}
+                        isPinned={note.isPinned}
+                        color={note.color}
+                        onChangeColor={(color) => onNoteChange({ ...note, color })}
+                        onPin={() => onNoteChange({ ...note, isPinned: !note.isPinned })}
+                        onDuplicate={() => {
+                          if (onNoteCreate) onNoteCreate({ ...note, id: Date.now().toString(), title: `${note.title} (copy)`, updatedAt: Date.now() });
+                        }}
+                        onOpen={() => onNoteClick(note)}
+                        onCopyLink={() => {
+                          navigator.clipboard.writeText(`noter://note/${note.id}`);
+                        }}
+                        onDelete={() => { if (onNoteDelete) onNoteDelete(note.id); }}
+                        className="absolute right-0 top-0 z-30"
+                      />
                     </div>
+                    {note.attachments && note.attachments.length > 0 && (
+                      <div className="mb-4 rounded-xl overflow-hidden">
+                        <AttachmentNode attachment={note.attachments[0] as any} className="w-full h-40 object-cover rounded-xl" />
+                      </div>
+                    )}
+
                     <div className="text-base text-gray-500 line-clamp-4 leading-relaxed flex-1 font-medium overflow-hidden" dangerouslySetInnerHTML={{ __html: note.content || 'Start typing...' }} />
-                    
+
                     <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                       <span className="text-xs font-medium text-gray-400">{note.date}</span>
                       {note.attachments && note.attachments.length > 0 && (

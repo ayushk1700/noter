@@ -1,3 +1,43 @@
+export type ID = string
+
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly'
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency
+  interval?: number // 1 = every, 2 = every 2 units
+}
+
+export interface Subtask {
+  id: ID
+  parentId: ID
+  title: string
+  completed: boolean
+}
+
+export interface Task {
+  id: ID
+  listId: ID
+  title: string
+  description?: string
+  dueDate?: string // ISO
+  completed?: boolean
+  recurrence?: RecurrenceRule | null
+  subtasks?: Subtask[]
+  order?: number
+  updatedAt?: number
+}
+
+export interface List {
+  id: ID
+  name: string
+  order?: number
+}
+
+export interface PersistenceAdapter {
+  loadAll: () => Promise<{ lists: List[]; tasks: Task[] }>
+  saveLists: (lists: List[]) => Promise<void>
+  saveTasks: (tasks: Task[]) => Promise<void>
+}
 // Folder concept removed in favor of tags in Note
 export interface Attachment {
   id: string;
@@ -22,7 +62,10 @@ export interface Note {
   tags: string[];
   date: string;
   attachments: Attachment[];
+  createdAt?: number;
   updatedAt: number;
+  isDeleted?: boolean;
+  isArchived?: boolean;
   x?: number;
   y?: number;
   width?: number;

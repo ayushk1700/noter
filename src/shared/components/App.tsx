@@ -12,9 +12,26 @@ import SplashView from '@/shared/components/SplashView';
 import WorkspaceView from '@/features/workspace/components/WorkspaceView';
 import EditorView from '@/features/editor/components/EditorView';
 import CalendarView from '@/features/calendar/components/CalendarView';
+import { useNotesStore } from '@/shared/store/useNotesStore';
 
 export default function App() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const notes = useNotesStore(state => state.notes);
+  const themeMode = useNotesStore(state => state.themeMode);
+  
+  const setNotes = useCallback((newNotesVal: Note[] | ((prev: Note[]) => Note[])) => {
+    const current = useNotesStore.getState().notes;
+    const next = typeof newNotesVal === 'function' ? newNotesVal(current) : newNotesVal;
+    useNotesStore.getState().setNotes(next);
+  }, []);
+
+  const setThemeMode = useCallback((newThemeVal: 'light' | 'dark' | ((prev: 'light' | 'dark') => 'light' | 'dark')) => {
+    const current = useNotesStore.getState().themeMode;
+    const next = typeof newThemeVal === 'function' ? newThemeVal(current) : newThemeVal;
+    if (next !== current) {
+      useNotesStore.getState().toggleTheme();
+    }
+  }, []);
+
   const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarLayout, setCalendarLayout] = useState<CalendarLayout>('month');
@@ -28,7 +45,6 @@ export default function App() {
   const [activeNote, setActiveNote] = useState<Note | null>(null);
   const [appState, setAppState] = useState<'splash' | 'workspace' | 'editor' | 'calendar'>('splash');
   const [editorInitialZenMode, setEditorInitialZenMode] = useState(false);
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   const [isChronoEnabled, setIsChronoEnabled] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [workspaceMode, setWorkspaceMode] = useState<'grid' | 'canvas'>('canvas');
@@ -98,7 +114,7 @@ export default function App() {
 
       setNotesLoaded(true);
     })();
-  }, []);
+  }, [setNotes]);
 
   useEffect(() => {
     console.log('[SAVE EFFECT] notesLoaded:', notesLoaded, 'notes.length:', notes.length);
@@ -218,7 +234,7 @@ export default function App() {
     setNotes(prev => [newNote, ...prev]);
     setActiveNote(newNote);
     setAppState('editor');
-  }, []);
+  }, [setNotes]);
 
   const createVoiceNote = useCallback((blob: Blob, durationMs: number) => {
     const url = URL.createObjectURL(blob);
@@ -252,7 +268,7 @@ export default function App() {
       URL.revokeObjectURL(url);
     };
     reader.readAsDataURL(blob);
-  }, []);
+  }, [setNotes]);
 
   const createMediaNote = useCallback((type: 'image' | 'video', file: File) => {
     const reader = new FileReader();
@@ -280,7 +296,7 @@ export default function App() {
       triggerToast(`${type.charAt(0).toUpperCase() + type.slice(1)} Note created!`, 'success');
     };
     reader.readAsDataURL(file);
-  }, []);
+  }, [setNotes]);
 
 
   const closeEditor = useCallback(() => {
@@ -640,84 +656,89 @@ export default function App() {
         />
       )}
 
-      {appState === 'workspace' && (
-        <WorkspaceView
-          notes={notes}
-          onNoteClick={(note, zenMode = false) => {
-            setActiveNote(note);
-            setEditorInitialZenMode(zenMode);
-            setAppState('editor');
-          }}
-          onBackToSplash={() => setAppState('splash')}
-          onNewNote={createNewNote}
-          onNewVoiceNote={createVoiceNote}
-          onCalendar={() => setAppState('calendar')}
-          onNoteChange={(updatedNote) => {
-            setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
-          }}
-          onNoteCreate={(newNote) => {
-            setNotes(prev => [newNote, ...prev]);
-          }}
-          onNoteDelete={deleteNote}
-          themeMode={themeMode}
-          isChronoEnabled={isChronoEnabled}
-          workspaceMode={workspaceMode}
-          setWorkspaceMode={setWorkspaceMode}
-          onToggleTheme={toggleTheme}
-          onToggleChrono={toggleChrono}
-        />
-      )}
+      {(appState === 'workspace' || appState === 'editor') && (
+        <div className="flex flex-row w-full h-full overflow-hidden relative z-10">
+          {/* Main Dashboard Panel */}
+          <div className="flex-1 h-full overflow-hidden relative flex flex-col">
+            {appState === 'workspace' && (
+              <WorkspaceView
+                notes={notes.filter(n => !n.isDeleted && !n.isArchived)}
+                onNoteClick={(note, zenMode = false) => {
+                  setActiveNote(note);
+                  setEditorInitialZenMode(zenMode);
+                  setAppState('editor');
+                }}
+                onBackToSplash={() => setAppState('splash')}
+                onNewNote={createNewNote}
+                onNewVoiceNote={createVoiceNote}
+                onCalendar={() => setAppState('calendar')}
+                onNoteChange={(updatedNote) => {
+                  setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+                }}
+                onNoteCreate={(newNote) => {
+                  setNotes(prev => [newNote, ...prev]);
+                }}
+                onNoteDelete={deleteNote}
+                themeMode={themeMode}
+                workspaceMode={workspaceMode}
+                setWorkspaceMode={setWorkspaceMode}
+                onToggleTheme={toggleTheme}
+              />
+            )}
 
-      {appState === 'editor' && activeNote && (
-        <EditorView
-          note={activeNote}
-          notes={notes}
-          themeMode={themeMode}
-          isChronoEnabled={isChronoEnabled}
-          initialZenMode={editorInitialZenMode}
-          onToggleTheme={toggleTheme}
-          onToggleChrono={toggleChrono}
-          onTitleChange={(title) => updateActiveNote({ title })}
-          onContentChange={(content) => updateActiveNote({ content })}
-          onTagsChange={(tags) => updateActiveNote({ tags })}
-          onNoteChange={(note) => updateActiveNote(note)}
-          onBack={closeEditor}
-          onOpenNote={(noteId) => {
-            const note = notes.find(n => n.id === noteId);
-            if (note) setActiveNote(note);
-          }}
-          onDelete={() => deleteNote(activeNote.id)}
-          onImageUpload={(e) => handleFileUpload(e, 'image')}
-          onVideoUpload={(e) => handleFileUpload(e, 'video')}
-          onFileUpload={(e) => handleFileUpload(e, 'file')}
-          onRemoveAttachment={removeAttachment}
-          imageInputRef={imageInputRef}
-          videoInputRef={videoInputRef}
-          fileInputRef={fileInputRef}
-          onCreateSubPage={(title?: string, content?: string) => {
-            const newNote: Note = {
-              id: Date.now().toString(),
-              parentId: activeNote.id,
-              title: title || 'Untitled Page',
-              content: content || '',
-              tags: [],
-              date: getCurrentDate(),
-              attachments: [],
-              updatedAt: Date.now(),
-            };
-            setNotes(prev => [newNote, ...prev]);
-            return newNote.id;
-          }}
-          onOpenSubPage={(pageId) => {
-            const page = notes.find(n => n.id === pageId);
-            if (page) {
-              setActiveNote(page);
-              setAppState('editor');
-            } else {
-              triggerToast('Page not found', 'error');
-            }
-          }}
-        />
+            {appState === 'editor' && activeNote && (
+              <EditorView
+                note={activeNote}
+                notes={notes}
+                themeMode={themeMode}
+                isChronoEnabled={isChronoEnabled}
+                initialZenMode={editorInitialZenMode}
+                onToggleTheme={toggleTheme}
+                onToggleChrono={toggleChrono}
+                onTitleChange={(title) => updateActiveNote({ title })}
+                onContentChange={(content) => updateActiveNote({ content })}
+                onTagsChange={(tags) => updateActiveNote({ tags })}
+                onNoteChange={(note) => updateActiveNote(note)}
+                onBack={closeEditor}
+                onOpenNote={(noteId) => {
+                  const note = notes.find(n => n.id === noteId);
+                  if (note) setActiveNote(note);
+                }}
+                onDelete={() => deleteNote(activeNote.id)}
+                onImageUpload={(e) => handleFileUpload(e, 'image')}
+                onVideoUpload={(e) => handleFileUpload(e, 'video')}
+                onFileUpload={(e) => handleFileUpload(e, 'file')}
+                onRemoveAttachment={removeAttachment}
+                imageInputRef={imageInputRef}
+                videoInputRef={videoInputRef}
+                fileInputRef={fileInputRef}
+                onCreateSubPage={(title?: string, content?: string) => {
+                  const newNote: Note = {
+                    id: Date.now().toString(),
+                    parentId: activeNote.id,
+                    title: title || 'Untitled Page',
+                    content: content || '',
+                    tags: [],
+                    date: getCurrentDate(),
+                    attachments: [],
+                    updatedAt: Date.now(),
+                  };
+                  setNotes(prev => [newNote, ...prev]);
+                  return newNote.id;
+                }}
+                onOpenSubPage={(pageId) => {
+                  const page = notes.find(n => n.id === pageId);
+                  if (page) {
+                    setActiveNote(page);
+                    setAppState('editor');
+                  } else {
+                    triggerToast('Page not found', 'error');
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
       )}
 
       {appState === 'calendar' && (
