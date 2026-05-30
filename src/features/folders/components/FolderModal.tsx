@@ -23,7 +23,7 @@ export default function FolderModal({
 
   return (
     <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in">
-      <div className="bg-white p-8 w-full max-w-md rounded-3xl shadow-2xl relative border border-gray-100">
+      <div className="bg-white p-8 w-full max-w-md rounded-3xl shadow-2xl relative border border-gray-100 animate-origami-unfold origin-top [transform-style:preserve-3d]">
         <button 
           onClick={onClose}
           className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 bg-gray-50 hover:bg-gray-200 p-2 rounded-full transition-colors"

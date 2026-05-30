@@ -1,5 +1,16 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Newsreader } from 'next/font/google';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
+
+const newsreader = Newsreader({
+  subsets: ['latin'],
+  variable: '--font-serif',
+});
 
 export const metadata: Metadata = {
   title: 'Fokus - The Sanctuary for Raw Ideas',
@@ -43,7 +54,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Fokus" />
         <meta name="theme-color" content="#FF7D54" />
       </head>
-      <body className="bg-[#F9F8F6]">{children}</body>
+      <body className={`${inter.variable} ${newsreader.variable} bg-[#F9F8F6] font-sans`}>{children}</body>
     </html>
   );
 }

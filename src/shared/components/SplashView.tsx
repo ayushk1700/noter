@@ -92,7 +92,7 @@ export default function SplashView({
         
         {/* Greeting & Date */}
         <div className="text-center space-y-4">
-          <h1 className={`text-6xl md:text-7xl font-extrabold tracking-tight transition-colors
+          <h1 className={`text-balance font-serif text-6xl md:text-7xl font-extrabold tracking-tight transition-colors
             ${isDark ? 'text-white' : 'text-neutral-900'}`}>
             {greeting}.
           </h1>
@@ -170,7 +170,7 @@ export default function SplashView({
       >
         <Quote className={`w-5 h-5 rotate-180 transition-colors duration-300 
           ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`} />
-        <p className={`text-sm italic font-medium leading-relaxed max-w-sm px-4
+        <p className={`text-balance text-sm italic font-medium leading-relaxed max-w-sm px-4
           ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
           &ldquo;{currentQuote.text}&rdquo;
         </p>

@@ -31,6 +31,7 @@ export interface ListItem {
 
 export interface ListBlock {
   type: 'list';
+  id: string;
   ordered: boolean;
   items: ListItem[];
 }
@@ -43,6 +44,7 @@ export interface ChecklistItem {
 
 export interface ChecklistBlock {
   type: 'checklist';
+  id: string;
   items: ChecklistItem[];
 }
 
@@ -59,6 +61,7 @@ export interface DividerBlock {
 
 export interface CodeBlock {
   type: 'code';
+  id: string;
   language?: string;
   code: string;
 }

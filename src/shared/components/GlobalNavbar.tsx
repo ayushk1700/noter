@@ -30,10 +30,10 @@ export default function GlobalNavbar({ themeMode = 'light', children, className 
   return (
     <div className={`fixed left-1/2 -translate-x-1/2 z-[100] transition-all duration-700 ease-out ${isScrolled ? 'top-4' : 'top-6'} ${className} ${isDark ? 'nav-dark' : 'nav-light'}`}>
       <div
-        className={`flex items-center justify-center rounded-[2.5rem] transition-all duration-500 ease-out overflow-visible border
+        className={`flex items-center justify-center rounded-[2.5rem] transition-all duration-500 ease-out overflow-visible border backdrop-blur-md shadow-xl
           ${isDark
-            ? 'bg-neutral-900/80 border-white/10 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)]'
-            : 'bg-white/80 border-gray-200/60 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.15)]'
+            ? 'bg-neutral-900/70 border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.45)]'
+            : 'bg-white/70 border-white/20 shadow-[0_18px_50px_rgba(15,23,42,0.14)]'
           }
           ${isScrolled
             ? 'px-3 py-2 scale-[0.85] hover:scale-95'
@@ -62,7 +62,7 @@ export default function GlobalNavbar({ themeMode = 'light', children, className 
         }
         .nav-light .nav-content button:hover {
            color: rgba(0, 0, 0, 0.9) !important;
-           background-color: rgba(0, 0, 0, 0.05) !important;
+            background-color: rgba(255, 255, 255, 0.55) !important;
         }
         .nav-light .nav-content .w-px {
            background-color: rgba(0, 0, 0, 0.15) !important;
@@ -77,7 +77,7 @@ export default function GlobalNavbar({ themeMode = 'light', children, className 
         }
         .nav-dark .nav-content button:hover {
            color: rgba(255, 255, 255, 0.9) !important;
-           background-color: rgba(255, 255, 255, 0.1) !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
         }
         .nav-dark .nav-content .w-px {
            background-color: rgba(255, 255, 255, 0.15) !important;

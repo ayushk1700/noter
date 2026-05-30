@@ -257,7 +257,7 @@ export default function NotesSidebar({ onOpenNote, onCloseSidebar }: Props) {
         <div className="mb-4">
           <button
             onClick={() => setShowArchive(prev => !prev)}
-            className="flex items-center gap-1.5 w-full text-[10px] font-extrabold uppercase tracking-widest text-slate-400/80 mb-2 px-1 focus:outline-none"
+            className="sticky-peel flex items-center gap-1.5 w-full text-[10px] font-extrabold uppercase tracking-widest text-slate-400/80 mb-2 px-1 focus:outline-none"
           >
             <Archive size={10} className="text-orange-400" />
             <span>Archive</span>
@@ -281,7 +281,7 @@ export default function NotesSidebar({ onOpenNote, onCloseSidebar }: Props) {
         <div className="mb-4">
           <button
             onClick={() => setShowTrash(prev => !prev)}
-            className="flex items-center gap-1.5 w-full text-[10px] font-extrabold uppercase tracking-widest text-slate-400/80 mb-2 px-1 focus:outline-none"
+            className="sticky-peel flex items-center gap-1.5 w-full text-[10px] font-extrabold uppercase tracking-widest text-slate-400/80 mb-2 px-1 focus:outline-none"
           >
             <Trash2 size={10} className="text-red-400" />
             <span>Trash</span>

@@ -1,4 +1,4 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read specs/003-rich-text-editor/plan.md
+shell commands, and other important information, read specs/004-ui-ux-enhancements/plan.md
 <!-- SPECKIT END -->

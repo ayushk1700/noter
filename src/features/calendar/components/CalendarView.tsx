@@ -223,7 +223,7 @@ export default function CalendarView({
   };
 
   return (
-    <div className="absolute inset-0 bg-[#F9F8F6] z-40 flex flex-col items-center overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+    <div className="absolute inset-0 bg-[#F9F8F6] z-40 flex flex-col items-center overflow-hidden animate-in slide-in-from-bottom-8 duration-300 pt-24 md:pt-28">
       <div className="w-full max-w-7xl h-full flex flex-col relative">
         
         <GlobalNavbar themeMode={themeMode}>

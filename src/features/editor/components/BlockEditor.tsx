@@ -61,7 +61,7 @@ export default function BlockEditor({ title, content, onTitleChange, onContentCh
         value={title}
         onChange={(e) => onTitleChange(e.target.value)}
         placeholder="Note Title..." 
-        className="w-full bg-transparent text-4xl md:text-5xl font-extrabold outline-none placeholder-gray-300 text-gray-900 tracking-tighter mb-8 leading-tight"
+        className="text-balance w-full bg-transparent text-4xl md:text-5xl font-serif font-extrabold outline-none placeholder-gray-300 text-gray-900 tracking-tighter mb-8 leading-tight"
       />
       <div className="flex-1 cursor-text overflow-y-auto no-scrollbar pb-32" onPointerDown={(e) => e.stopPropagation()}>
         <EditorContent editor={editor} />

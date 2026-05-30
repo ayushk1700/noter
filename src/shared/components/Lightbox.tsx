@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { X, FileText, ZoomIn, ZoomOut, RotateCw, Download } from 'lucide-react';
 import { Attachment, Note } from '@/shared/lib/types';
-import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { BlockId } from '@/features/editor/tiptap/BlockIdExtension';
-import { ColumnBlock, Column } from '@/features/editor/tiptap/ColumnExtension';
 import EditorHeader from '@/features/editor/components/EditorHeader';
+import ContentLinkPreviewSurface from './ContentLinkPreviewSurface';
 
 interface LightboxProps {
   attachment?: Attachment;
@@ -14,12 +11,6 @@ interface LightboxProps {
 }
 
 export default function Lightbox({ attachment, note, onClose }: LightboxProps) {
-  const editor = useEditor({
-    extensions: [BlockId, ColumnBlock, Column, StarterKit],
-    content: note?.content,
-    editable: false,
-    editorProps: { attributes: { class: 'prose prose-lg focus:outline-none min-w-full max-w-none prose-invert text-neutral-300' } }
-  });
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
 
@@ -120,7 +111,11 @@ export default function Lightbox({ attachment, note, onClose }: LightboxProps) {
                <EditorHeader note={note} onNoteChange={() => {}} themeMode="dark" />
              </div>
              <div className="px-12">
-               <EditorContent editor={editor} />
+               <ContentLinkPreviewSurface
+                 html={note.content}
+                 themeMode="dark"
+                 contentClassName="prose prose-lg focus:outline-none min-w-full max-w-none prose-invert text-neutral-300"
+               />
              </div>
           </div>
         )}
