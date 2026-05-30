@@ -107,7 +107,7 @@ export default function RightPanel({
   }) => (
     <button
       onClick={() => setOpenSection(id)}
-      className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-all select-none ${
+      className={`sticky-peel w-full flex items-center gap-2 px-4 py-3 text-left transition-all select-none ${
         openSection === id
           ? isDark ? 'bg-neutral-800/60' : 'bg-white/80'
           : isDark ? 'hover:bg-neutral-800/30' : 'hover:bg-white/40'

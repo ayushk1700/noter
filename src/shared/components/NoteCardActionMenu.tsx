@@ -92,7 +92,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-label="Note actions"
-        className="flex items-center justify-center p-1.5 text-gray-500 hover:text-gray-900 bg-white/80 hover:bg-white active:bg-gray-100 rounded-full border border-black/5 hover:border-black/10 shadow-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        className="flex items-center justify-center p-1.5 text-gray-500 hover:text-gray-900 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-md hover:bg-white/80 dark:hover:bg-neutral-900/80 active:bg-gray-100/80 rounded-full border border-white/20 dark:border-white/10 shadow-[0_12px_30px_rgba(251,125,84,0.10)] transition-all duration-200 outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         style={{ width: `${noteCardDesign.triggerSize ? Number(noteCardDesign.triggerSize) * 4 : 32}px`, height: `${noteCardDesign.triggerSize ? Number(noteCardDesign.triggerSize) * 4 : 32}px` }}
         onClick={handleTriggerClick}
       >
@@ -100,7 +100,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
       </button>
 
       <div
-        className={`origin-top-right absolute right-0 mt-2 ${menuWidthClass} bg-white/95 backdrop-blur-md border border-slate-100 ${roundedClass} shadow-2xl ring-1 ring-black ring-opacity-5 z-[100] ${transitionClass} ${
+        className={`origin-top-right absolute right-0 mt-2 ${menuWidthClass} bg-white/70 dark:bg-neutral-900/70 backdrop-blur-md border border-white/20 dark:border-white/10 ${roundedClass} shadow-[0_18px_50px_rgba(251,125,84,0.14)] dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)] z-[100] ${transitionClass} ${
           isOpen
             ? 'opacity-100 scale-100 pointer-events-auto translate-y-0'
             : 'opacity-0 scale-95 pointer-events-none -translate-y-1'
@@ -109,7 +109,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
         <div className="py-1.5 p-1 flex flex-col gap-1.5">
           <button
             type="button"
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10 active:bg-white/80 dark:active:bg-white/15 rounded-lg transition-colors font-medium"
             onClick={(e) => handleAction(e, onOpen, () => NoteCardActions.open(id))}
           >
             <ExternalLink size={14} className="opacity-60 shrink-0" />
@@ -118,7 +118,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
           
           <button
             type="button"
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10 active:bg-white/80 dark:active:bg-white/15 rounded-lg transition-colors font-medium"
             onClick={(e) => handleAction(e, onPin, () => NoteCardActions.pinToggle(id))}
           >
             <Pin size={14} className={`shrink-0 ${isPinned ? 'text-indigo-500 fill-indigo-500' : 'opacity-60'}`} />
@@ -127,7 +127,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
           
           <button
             type="button"
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10 active:bg-white/80 dark:active:bg-white/15 rounded-lg transition-colors font-medium"
             onClick={(e) => handleAction(e, onDuplicate, () => NoteCardActions.duplicate(id))}
           >
             <Copy size={14} className="opacity-60 shrink-0" />
@@ -136,7 +136,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
           
           <button
             type="button"
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-white/60 dark:hover:bg-white/10 active:bg-white/80 dark:active:bg-white/15 rounded-lg transition-colors font-medium"
             onClick={(e) => handleAction(e, onCopyLink, () => NoteCardActions.copyLink(id))}
           >
             <LinkIcon size={14} className="opacity-60 shrink-0" />
@@ -179,7 +179,7 @@ export const NoteCardActionMenu: React.FC<NoteCardActionMenuProps> = ({
           
           <button
             type="button"
-            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50/80 active:bg-red-100 rounded-lg transition-colors font-semibold"
+            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-500/10 active:bg-red-100 dark:active:bg-red-500/15 rounded-lg transition-colors font-semibold"
             onClick={(e) => handleAction(e, onDelete, () => NoteCardActions.delete(id))}
           >
             <Trash2 size={14} className="shrink-0 text-red-500" />

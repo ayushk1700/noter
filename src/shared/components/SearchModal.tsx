@@ -129,13 +129,13 @@ export default function SearchModal({ notes, themeMode = 'light', onOpenNote, on
 
       {/* Modal panel */}
       <div
-        className={`relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 ${
-          isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-gray-100'
+        className={`relative w-full max-w-2xl rounded-3xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200 backdrop-blur-md shadow-[0_24px_80px_rgba(15,23,42,0.22)] ${
+          isDark ? 'bg-neutral-900/70 border border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.48)]' : 'bg-white/70 border border-white/20 shadow-[0_24px_80px_rgba(14,165,233,0.14)]'
         }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Search Input Row */}
-        <div className={`flex items-center gap-3 px-5 py-4 border-b ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+        <div className={`flex items-center gap-3 px-5 py-4 border-b ${isDark ? 'border-white/10' : 'border-white/20'}`}>
           <Search
             size={18}
             className={isDark ? 'text-neutral-400 shrink-0' : 'text-gray-400 shrink-0'}
@@ -176,13 +176,13 @@ export default function SearchModal({ notes, themeMode = 'light', onOpenNote, on
           {results.length === 0 && query.trim() ? (
             <div className={`flex flex-col items-center justify-center py-16 gap-3 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
               <Search size={32} className="opacity-30" />
-              <p className="font-medium">No notes found for &ldquo;<span className="font-bold">{query}</span>&rdquo;</p>
-              <p className="text-sm">Try different keywords or check spelling</p>
+              <p className="text-balance font-medium">No notes found for &ldquo;<span className="font-bold">{query}</span>&rdquo;</p>
+              <p className="text-balance text-sm">Try different keywords or check spelling</p>
             </div>
           ) : (
             <div className="p-2">
               {/* Section label */}
-              <p className={`text-[10px] font-bold uppercase tracking-widest px-3 py-2 ${isDark ? 'text-neutral-600' : 'text-gray-400'}`}>
+              <p className={`text-balance text-[10px] font-bold uppercase tracking-widest px-3 py-2 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
                 {query.trim() ? `${results.length} result${results.length !== 1 ? 's' : ''}` : 'Recent Notes'}
               </p>
 

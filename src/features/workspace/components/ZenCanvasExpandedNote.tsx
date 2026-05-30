@@ -10,7 +10,7 @@ export default function ZenCanvasExpandedNote({ activeNote }: ZenCanvasExpandedN
   const [activeLightboxAttachment, setActiveLightboxAttachment] = useState<any | null>(null);
 
   return (
-    <div className="flex flex-col min-h-full w-full h-full relative">
+    <div className="flex flex-col min-h-full w-full h-full relative animate-origami-unfold origin-top [transform-style:preserve-3d]">
       {activeNote.data?.note?.coverImage && (
         <div 
           className="w-full h-64 md:h-80 bg-cover bg-center shrink-0 border-b border-black/10 md:rounded-t-[2.5rem]"
@@ -42,7 +42,7 @@ export default function ZenCanvasExpandedNote({ activeNote }: ZenCanvasExpandedN
                   <div 
                     key={att.id} 
                     onClick={() => setActiveLightboxAttachment(att)}
-                    className="w-32 h-40 md:w-48 md:h-60 bg-white p-2 md:p-3 shadow-xl rounded-none border border-gray-200/80 transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:rotate-0 hover:z-10 flex flex-col cursor-pointer"
+                    className="w-32 h-40 md:w-48 md:h-60 bg-white p-2 md:p-3 shadow-xl rounded-none border border-gray-200/80 transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:rotate-0 hover:z-10 flex flex-col cursor-pointer sticky-peel"
                     style={{ transform: `rotate(${(idx % 3 === 0) ? -4 : (idx % 2 === 0) ? 3 : -2}deg)` }}
                   >
                     <div className="w-full flex-1 bg-gray-100 overflow-hidden relative">

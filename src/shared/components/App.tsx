@@ -13,10 +13,24 @@ import WorkspaceView from '@/features/workspace/components/WorkspaceView';
 import EditorView from '@/features/editor/components/EditorView';
 import CalendarView from '@/features/calendar/components/CalendarView';
 import { useNotesStore } from '@/shared/store/useNotesStore';
+import CommandPalette from '@/shared/components/CommandPalette';
+import KeyboardShortcutsOverlay from '@/shared/components/KeyboardShortcutsOverlay';
+import { KEYBOARD_SHORTCUTS } from '@/shared/lib/keyboardShortcuts';
+import { useGlobalCommandPalette } from '@/shared/hooks/useGlobalCommandPalette';
 
 export default function App() {
   const notes = useNotesStore(state => state.notes);
   const themeMode = useNotesStore(state => state.themeMode);
+  const {
+    isOpen: isCommandPaletteOpen,
+    query: commandQuery,
+    commands: availableCommands,
+    closePalette: closeCommandPalette,
+    setQuery: setCommandQuery,
+    registerCommand: registerGlobalCommand,
+    unregisterCommand: unregisterGlobalCommand,
+    clearCommandRegistry: clearGlobalCommandRegistry,
+  } = useGlobalCommandPalette();
   
   const setNotes = useCallback((newNotesVal: Note[] | ((prev: Note[]) => Note[])) => {
     const current = useNotesStore.getState().notes;
@@ -47,7 +61,8 @@ export default function App() {
   const [editorInitialZenMode, setEditorInitialZenMode] = useState(false);
   const [isChronoEnabled, setIsChronoEnabled] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
-  const [workspaceMode, setWorkspaceMode] = useState<'grid' | 'canvas'>('canvas');
+  const [workspaceMode, setWorkspaceMode] = useState<'grid' | 'canvas' | 'graph'>('canvas');
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +70,108 @@ export default function App() {
   const isInitialMount = useRef(true);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [notesLoaded, setNotesLoaded] = useState(false);
+
+  const toggleTheme = useCallback(() => {
+    setThemeMode(prev => prev === 'light' ? 'dark' : 'light');
+  }, [setThemeMode]);
+
+  const createNewNote = useCallback((x?: number, y?: number) => {
+    const newNote: Note = {
+      id: Date.now().toString(),
+      title: '',
+      content: '',
+      tags: [],
+      date: getCurrentDate(),
+      attachments: [],
+      updatedAt: Date.now(),
+      x: x || window.innerWidth / 2 - 160,
+      y: y || window.innerHeight / 2 - 160,
+      width: 320,
+    };
+    setNotes(prev => [newNote, ...prev]);
+    setActiveNote(newNote);
+    setAppState('editor');
+  }, [setNotes]);
+
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      return Boolean(target.closest('input, textarea, [contenteditable="true"]'));
+    };
+
+    const handleShortcutKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+
+      if (event.key === '?' || (event.shiftKey && event.key === '/')) {
+        event.preventDefault();
+        setIsShortcutsOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcutKeyDown);
+    return () => window.removeEventListener('keydown', handleShortcutKeyDown);
+  }, []);
+
+  useEffect(() => {
+    clearGlobalCommandRegistry();
+
+    registerGlobalCommand({
+      id: 'new-note',
+      label: 'New Note',
+      description: 'Create a new note in the workspace',
+      keywords: ['create', 'note'],
+      category: 'editor',
+      shortcut: 'Ctrl/Cmd+N',
+      action: () => createNewNote(),
+    });
+
+    registerGlobalCommand({
+      id: 'toggle-theme',
+      label: 'Toggle Theme',
+      description: 'Switch between light and dark mode',
+      keywords: ['theme', 'appearance'],
+      category: 'theme',
+      shortcut: 'Ctrl/Cmd+L',
+      action: () => toggleTheme(),
+    });
+
+    registerGlobalCommand({
+      id: 'open-workspace',
+      label: 'Open Workspace',
+      description: 'Switch to the workspace view',
+      keywords: ['workspace', 'home'],
+      category: 'navigation',
+      action: () => setAppState('workspace'),
+    });
+
+    registerGlobalCommand({
+      id: 'open-calendar',
+      label: 'Open Calendar',
+      description: 'Switch to the calendar view',
+      keywords: ['calendar', 'schedule'],
+      category: 'navigation',
+      action: () => setAppState('calendar'),
+    });
+
+    registerGlobalCommand({
+      id: 'open-shortcuts',
+      label: 'Show Shortcuts',
+      description: 'Open the shortcuts reference overlay',
+      keywords: ['help', 'shortcuts', 'keyboard'],
+      category: 'utility',
+      shortcut: '?',
+      action: () => setIsShortcutsOpen(true),
+    });
+
+    return () => {
+      unregisterGlobalCommand('new-note');
+      unregisterGlobalCommand('toggle-theme');
+      unregisterGlobalCommand('open-workspace');
+      unregisterGlobalCommand('open-calendar');
+      unregisterGlobalCommand('open-shortcuts');
+      clearGlobalCommandRegistry();
+    };
+  }, [createNewNote, setAppState, toggleTheme, registerGlobalCommand, unregisterGlobalCommand, clearGlobalCommandRegistry]);
 
   useEffect(() => {
     (async () => {
@@ -216,25 +333,6 @@ export default function App() {
     }
   }, []);
 
-
-  // Stable callback for creating notes
-  const createNewNote = useCallback((x?: number, y?: number) => {
-    const newNote: Note = {
-      id: Date.now().toString(),
-      title: '',
-      content: '',
-      tags: [],
-      date: getCurrentDate(),
-      attachments: [],
-      updatedAt: Date.now(),
-      x: x || window.innerWidth / 2 - 160,
-      y: y || window.innerHeight / 2 - 160,
-      width: 320,
-    };
-    setNotes(prev => [newNote, ...prev]);
-    setActiveNote(newNote);
-    setAppState('editor');
-  }, [setNotes]);
 
   const createVoiceNote = useCallback((blob: Blob, durationMs: number) => {
     const url = URL.createObjectURL(blob);
@@ -607,12 +705,11 @@ export default function App() {
     if (appState !== 'editor') e.preventDefault();
   };
 
-  const toggleTheme = () => setThemeMode(prev => prev === 'light' ? 'dark' : 'light');
   const toggleChrono = () => setIsChronoEnabled(prev => !prev);
 
   return (
     <div
-      className={`flex h-[100dvh] w-full font-sans overflow-hidden selection:bg-gray-300 relative ${themeMode === 'dark' ? 'bg-neutral-900 text-slate-100' : 'bg-[#F9F8F6] text-gray-900'}`}
+      className={`flex h-[100dvh] w-full font-sans overflow-hidden relative ${themeMode === 'dark' ? 'bg-neutral-900 text-slate-100' : 'bg-[#F9F8F6] text-gray-900'}`}
       onDragOver={handleGlobalDragOver}
       onDrop={handleGlobalDrop}
     >
@@ -624,9 +721,28 @@ export default function App() {
         onNewNote={createNewNote}
         onVoiceNote={createVoiceNote}
         onMediaNote={createMediaNote}
-        onZoomToggle={appState === 'workspace' ? () => setWorkspaceMode(prev => prev === 'grid' ? 'canvas' : 'grid') : undefined}
+        onZoomToggle={appState === 'workspace' ? () => setWorkspaceMode(prev => prev === 'grid' ? 'canvas' : prev === 'canvas' ? 'graph' : 'grid') : undefined}
         themeMode={themeMode}
         isVisible={appState === 'workspace' || appState === 'editor' || appState === 'calendar'}
+      />
+
+      <CommandPalette
+        commands={availableCommands}
+        isOpen={isCommandPaletteOpen}
+        onClose={closeCommandPalette}
+        onQueryChange={setCommandQuery}
+        onRunCommand={(command) => {
+          void command.action();
+          closeCommandPalette();
+          setCommandQuery('');
+        }}
+        query={commandQuery}
+      />
+
+      <KeyboardShortcutsOverlay
+        isOpen={isShortcutsOpen}
+        shortcuts={KEYBOARD_SHORTCUTS}
+        onClose={() => setIsShortcutsOpen(false)}
       />
 
       {appState === 'splash' && (
@@ -663,6 +779,7 @@ export default function App() {
             {appState === 'workspace' && (
               <WorkspaceView
                 notes={notes.filter(n => !n.isDeleted && !n.isArchived)}
+                calendarEvents={calendarEvents}
                 onNoteClick={(note, zenMode = false) => {
                   setActiveNote(note);
                   setEditorInitialZenMode(zenMode);

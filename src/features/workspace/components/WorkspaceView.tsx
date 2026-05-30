@@ -8,9 +8,12 @@ import NoteCardActionMenu from '@/shared/components/NoteCardActionMenu';
 import GlobalNavbar from '@/shared/components/GlobalNavbar';
 import NavbarSearch from '@/shared/components/NavbarSearch';
 import RightPanel from '@/shared/components/RightPanel';
+import ContentLinkPreviewSurface from '@/shared/components/ContentLinkPreviewSurface';
+import GraphView from './GraphView';
 
 interface WorkspaceViewProps {
   notes: Note[];
+  calendarEvents: import('@/shared/lib/types').CalendarEvent[];
   onNoteClick: (note: Note, zenMode?: boolean) => void;
   onNewNote: (x?: number, y?: number) => void;
   onNewVoiceNote: (blob: Blob, durationMs: number) => void;
@@ -20,13 +23,14 @@ interface WorkspaceViewProps {
   onNoteCreate?: (note: Note) => void;
   onNoteDelete?: (noteId: string) => void;
   themeMode?: 'light' | 'dark';
-  workspaceMode: 'grid' | 'canvas';
-  setWorkspaceMode: (mode: 'grid' | 'canvas') => void;
+  workspaceMode: 'grid' | 'canvas' | 'graph';
+  setWorkspaceMode: (mode: 'grid' | 'canvas' | 'graph') => void;
   onToggleTheme?: () => void;
 }
 
 export default function WorkspaceView({
   notes,
+  calendarEvents,
   onNoteClick,
   onNewNote,
   onNewVoiceNote,
@@ -252,6 +256,16 @@ export default function WorkspaceView({
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
+          <button 
+            onClick={() => {
+              setSelectedTag(null);
+              setWorkspaceMode('graph');
+            }}
+            className={`p-2 rounded-full transition-all ${workspaceMode === 'graph' ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/40 hover:text-white/80'}`}
+            title="Knowledge Graph"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
 
           <div className="w-px h-4 bg-white/15 mx-1 hidden md:block" />
 
@@ -288,6 +302,7 @@ export default function WorkspaceView({
           <div className="absolute inset-0">
             <ZenCanvas 
               items={canvasItems}
+              notes={notes}
               connections={canvasConnections}
 
               onNewConnection={(sourceId, targetId) => {
@@ -335,7 +350,7 @@ export default function WorkspaceView({
             groupedNotes.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[50vh] text-gray-400">
                 <Folder className="w-20 h-20 mb-8 text-gray-300" />
-                <p className="text-xl font-medium tracking-wide">Workspace is empty.</p>
+                <p className="text-balance text-xl font-medium tracking-wide">Workspace is empty.</p>
               </div>
             ) : (
               <div className="space-y-12 animate-in fade-in duration-500">
@@ -349,7 +364,17 @@ export default function WorkspaceView({
                         className="bg-white border-2 border-gray-200 shadow-xl rounded-2xl p-8 cursor-pointer group flex flex-col justify-center items-center min-h-[200px] hover:-translate-y-2 hover:border-indigo-400 transition-all duration-300"
                       >
                         <Folder className="w-12 h-12 text-[#FF7D54] mb-6 group-hover:scale-110 transition-transform duration-300" />
-                        <h3 className="font-extrabold text-2xl text-gray-900 capitalize tracking-tight">{group.tag}</h3>
+                        <h3 className="text-balance font-extrabold text-2xl text-gray-900 capitalize tracking-tight">{group.tag}</h3>
+                ) : workspaceMode === 'graph' ? (
+                  <div className="absolute inset-0 p-4 md:p-6">
+                    <GraphView
+                      notes={notes}
+                      calendarEvents={calendarEvents}
+                      themeMode={themeMode}
+                      onOpenNote={onNoteClick}
+                      onOpenCalendar={onCalendar}
+                    />
+                  </div>
                         <p className="text-gray-400 font-semibold mt-2 text-sm">{group.count} Notes</p>
                       </div>
                     ))}
@@ -360,7 +385,7 @@ export default function WorkspaceView({
                 {groupedNotes.find(g => g.tag === 'Untagged') && (
                   <div className="space-y-6 pt-4">
                     {groupedNotes.filter(g => g.tag !== 'Untagged').length > 0 && (
-                      <h2 className="text-lg font-bold text-gray-400 uppercase tracking-widest pl-2">Loose Notes</h2>
+                      <h2 className="text-balance text-lg font-bold text-gray-400 uppercase tracking-widest pl-2">Loose Notes</h2>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10 auto-rows-max">
                       {groupedNotes.find(g => g.tag === 'Untagged')?.notes.map(note => (
@@ -372,7 +397,7 @@ export default function WorkspaceView({
                           <div className="flex justify-between items-start mb-6 relative">
                             <div className="flex items-start gap-1.5">
                               {note.isPinned && <Pin size={18} className="text-[#FF7D54] shrink-0 mt-1" />}
-                              <h3 className="font-extrabold text-2xl text-gray-900 line-clamp-2 pr-2 leading-tight tracking-tight">{note.title || 'Untitled'}</h3>
+                              <h3 className="text-balance font-extrabold text-2xl text-gray-900 line-clamp-2 pr-2 leading-tight tracking-tight">{note.title || 'Untitled'}</h3>
                             </div>
                             
                             {/* Hover Actions */}
@@ -399,7 +424,16 @@ export default function WorkspaceView({
                             </div>
                           )}
 
-                          <div className="text-base text-gray-500 line-clamp-4 leading-relaxed flex-1 font-medium overflow-hidden" dangerouslySetInnerHTML={{ __html: note.content || 'Start typing...' }} />
+                          <ContentLinkPreviewSurface
+                            html={note.content || 'Start typing...'}
+                            notes={notes}
+                            onOpenNote={(noteId) => {
+                              const linkedNote = notes.find(item => item.id === noteId);
+                              if (linkedNote) onNoteClick(linkedNote);
+                            }}
+                            themeMode={themeMode}
+                            contentClassName="text-base text-gray-500 line-clamp-4 leading-relaxed flex-1 font-medium overflow-hidden"
+                          />
 
                           <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                             <span className="text-xs font-medium text-gray-400">{note.date}</span>
@@ -423,7 +457,7 @@ export default function WorkspaceView({
             activeNotes.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[50vh] text-gray-400">
                 <FileText className="w-20 h-20 mb-8 text-gray-300" />
-                <p className="text-xl font-medium tracking-wide">No notes here.</p>
+                <p className="text-balance text-xl font-medium tracking-wide">No notes here.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10 auto-rows-max animate-in fade-in duration-300">
@@ -436,7 +470,7 @@ export default function WorkspaceView({
                     <div className="flex justify-between items-start mb-6 relative">
                       <div className="flex items-start gap-1.5">
                         {note.isPinned && <Pin size={18} className="text-[#FF7D54] shrink-0 mt-1" />}
-                        <h3 className="font-extrabold text-2xl text-gray-900 line-clamp-2 pr-2 leading-tight tracking-tight">{note.title || 'Untitled'}</h3>
+                        <h3 className="text-balance font-extrabold text-2xl text-gray-900 line-clamp-2 pr-2 leading-tight tracking-tight">{note.title || 'Untitled'}</h3>
                       </div>
                       
                       {/* Hover Actions */}
@@ -463,7 +497,16 @@ export default function WorkspaceView({
                       </div>
                     )}
 
-                    <div className="text-base text-gray-500 line-clamp-4 leading-relaxed flex-1 font-medium overflow-hidden" dangerouslySetInnerHTML={{ __html: note.content || 'Start typing...' }} />
+                    <ContentLinkPreviewSurface
+                      html={note.content || 'Start typing...'}
+                      notes={notes}
+                      onOpenNote={(noteId) => {
+                        const linkedNote = notes.find(item => item.id === noteId);
+                        if (linkedNote) onNoteClick(linkedNote);
+                      }}
+                      themeMode={themeMode}
+                      contentClassName="text-base text-gray-500 line-clamp-4 leading-relaxed flex-1 font-medium overflow-hidden"
+                    />
 
                     <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                       <span className="text-xs font-medium text-gray-400">{note.date}</span>
@@ -515,8 +558,17 @@ export default function WorkspaceView({
               </button>
             </div>
             
-            <h2 className="text-4xl font-extrabold tracking-tight mb-8 pr-32">{previewNote.title || 'Untitled'}</h2>
-            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: previewNote.content || 'Start typing...' }} />
+            <h2 className="text-balance font-serif text-4xl font-extrabold tracking-tight mb-8 pr-32">{previewNote.title || 'Untitled'}</h2>
+            <ContentLinkPreviewSurface
+              html={previewNote.content || 'Start typing...'}
+              notes={notes}
+              onOpenNote={(noteId) => {
+                const linkedNote = notes.find(item => item.id === noteId);
+                if (linkedNote) onNoteClick(linkedNote);
+              }}
+              themeMode={themeMode}
+              contentClassName="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+            />
           </div>
         </div>
       )}

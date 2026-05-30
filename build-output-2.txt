@@ -1,0 +1,157 @@
+
+> fokus@1.0.0 build
+> next build
+
+▲ Next.js 16.2.6 (Turbopack)
+- Experiments (use with caution):
+  · optimizePackageImports
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 6 errors:
+./src/features/editor/components/EditorView.tsx:33:1
+Module not found: Can't resolve '../lib/editorSurface'
+  31 | import { BlockId } from '@/features/editor/tiptap/BlockIdExtension';
+  32 | import SearchModal from '@/shared/components/SearchModal';
+> 33 | import { getEditorSurfaceClassName } from '../lib/editorSurface';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  34 | import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+  35 | import ContentLinkPreviewSurface from '@/shared/components/ContentLinkPreviewSurface';
+  36 |
+
+
+
+Import trace:
+  Client Component Browser:
+    ./src/features/editor/components/EditorView.tsx [Client Component Browser]
+    ./src/shared/components/App.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/shared/components/App.tsx:16:1
+Module not found: Can't resolve '@/shared/components/CommandPalette'
+  14 | import CalendarView from '@/features/calendar/components/CalendarView';
+  15 | import { useNotesStore } from '@/shared/store/useNotesStore';
+> 16 | import CommandPalette from '@/shared/components/CommandPalette';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  17 | import KeyboardShortcutsOverlay from '@/shared/components/KeyboardShortcutsOverlay';
+  18 | import { KEYBOARD_SHORTCUTS } from '@/shared/lib/keyboardShortcuts';
+  19 | import { useGlobalCommandPalette } from '@/shared/hooks/useGlobalCommandPalette';
+
+Import map: aliased to relative './src/shared/components/CommandPalette' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/shared/components/App.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/shared/components/App.tsx:17:1
+Module not found: Can't resolve '@/shared/components/KeyboardShortcutsOverlay'
+  15 | import { useNotesStore } from '@/shared/store/useNotesStore';
+  16 | import CommandPalette from '@/shared/components/CommandPalette';
+> 17 | import KeyboardShortcutsOverlay from '@/shared/components/KeyboardShortcutsOverlay';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  18 | import { KEYBOARD_SHORTCUTS } from '@/shared/lib/keyboardShortcuts';
+  19 | import { useGlobalCommandPalette } from '@/shared/hooks/useGlobalCommandPalette';
+  20 |
+
+Import map: aliased to relative './src/shared/components/KeyboardShortcutsOverlay' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/shared/components/App.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/shared/components/App.tsx:19:1
+Module not found: Can't resolve '@/shared/hooks/useGlobalCommandPalette'
+  17 | import KeyboardShortcutsOverlay from '@/shared/components/KeyboardShortcutsOverlay';
+  18 | import { KEYBOARD_SHORTCUTS } from '@/shared/lib/keyboardShortcuts';
+> 19 | import { useGlobalCommandPalette } from '@/shared/hooks/useGlobalCommandPalette';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  20 |
+  21 | export default function App() {
+  22 |   const notes = useNotesStore(state => state.notes);
+
+Import map: aliased to relative './src/shared/hooks/useGlobalCommandPalette' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/shared/components/App.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/features/editor/components/EditorView.tsx:34:1
+Module not found: Can't resolve '@/shared/hooks/useReducedMotion'
+  32 | import SearchModal from '@/shared/components/SearchModal';
+  33 | import { getEditorSurfaceClassName } from '../lib/editorSurface';
+> 34 | import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  35 | import ContentLinkPreviewSurface from '@/shared/components/ContentLinkPreviewSurface';
+  36 |
+  37 | interface EditorViewProps {
+
+Import map: aliased to relative './src/shared/hooks/useReducedMotion' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/features/editor/components/EditorView.tsx [Client Component Browser]
+    ./src/shared/components/App.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./src/shared/components/App.tsx:18:1
+Module not found: Can't resolve '@/shared/lib/keyboardShortcuts'
+  16 | import CommandPalette from '@/shared/components/CommandPalette';
+  17 | import KeyboardShortcutsOverlay from '@/shared/components/KeyboardShortcutsOverlay';
+> 18 | import { KEYBOARD_SHORTCUTS } from '@/shared/lib/keyboardShortcuts';
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  19 | import { useGlobalCommandPalette } from '@/shared/hooks/useGlobalCommandPalette';
+  20 |
+  21 | export default function App() {
+
+Import map: aliased to relative './src/shared/lib/keyboardShortcuts' inside of [project]/
+
+
+Import trace:
+  Client Component Browser:
+    ./src/shared/components/App.tsx [Client Component Browser]
+    ./src/app/page.tsx [Client Component Browser]
+    ./src/app/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./src/features/editor/components/EditorView.tsx:33:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/shared/components/App.tsx:16:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/shared/components/App.tsx:17:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/shared/components/App.tsx:19:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/features/editor/components/EditorView.tsx:34:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./src/shared/components/App.tsx:18:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

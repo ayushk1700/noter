@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import { Note } from '@/shared/lib/types';
 import { Sun, Moon, Sunrise, Sunset, X, Move, Plus } from 'lucide-react';
 import ZenCanvasNoteCard from '@/features/workspace/components/ZenCanvasNoteCard';
 import ZenCanvasExpandedNote from './ZenCanvasExpandedNote';
@@ -23,6 +24,7 @@ export interface ZenCanvasConnection {
 
 interface ZenCanvasProps {
   items: ZenCanvasItem[];
+  notes?: Note[];
   connections?: ZenCanvasConnection[];
   onItemMove?: (id: string, x: number, y: number) => void;
   onItemClick?: (id: string) => void;
@@ -59,6 +61,7 @@ const THEME_STYLES: Record<string, string> = {
 
 export default function ZenCanvas({
   items,
+  notes = [],
   connections = [],
   onItemMove,
   onItemClick,
@@ -223,6 +226,7 @@ export default function ZenCanvas({
         el.style.top = `${newY}px`;
         el.style.transition = 'none';
       }
+
     } else if (intr.mode === 'draw-link') {
       const pos = getCanvasCoords(e.clientX, e.clientY);
       mouseCanvasPosRef.current = pos;
@@ -262,6 +266,7 @@ export default function ZenCanvas({
           el.style.transition = '';
         }
       }
+
     } else if (intr.mode === 'draw-link' && intr.targetId) {
       const target = e.target as HTMLElement;
       const noteCard = target.closest('.note-card') as HTMLElement;
@@ -427,6 +432,7 @@ export default function ZenCanvas({
           <ZenCanvasNoteCard
             key={item.id}
             item={item}
+            notes={notes}
             isActive={activeNote?.id === item.id}
             isAbstracted={isAbstracted}
             interactionMode={interaction.mode}
@@ -454,7 +460,7 @@ export default function ZenCanvas({
         {activeNote && (
           <div 
             className={`pointer-events-auto relative w-full h-full md:w-[90%] md:h-[90%] overflow-y-auto backdrop-blur-3xl border border-white/30 shadow-[0_30px_60px_rgba(0,0,0,0.15)] md:rounded-[2.5rem] transition-all duration-700 delay-100 flex flex-col
-              ${activeNote.color || 'bg-white'}
+              animate-origami-unfold origin-top ${activeNote.color || 'bg-white'}
             `}
             onClick={(e) => e.stopPropagation()}
           >

@@ -1,9 +1,31 @@
 /* stylelint-disable at-rule-no-unknown */
+@import 'tippy.js/dist/tippy.css';
+@import '@xyflow/react/dist/style.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import 'tippy.js/dist/tippy.css';
+::selection {
+  background: #ff7d54;
+  color: #ffffff;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+@keyframes ambient-rotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.04);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
 
 @keyframes drift-slow-1 {
   0%, 100% {
@@ -32,6 +54,100 @@
 
 .animate-drift-2 {
   animation: drift-slow-2 30s infinite ease-in-out;
+}
+
+@keyframes origami-unfold {
+  0% {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(-22deg) rotateY(14deg) scale(0.92) translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0deg) rotateY(0deg) scale(1) translateY(0);
+  }
+}
+
+@keyframes zen-ink-bleed {
+  0% {
+    filter: blur(0.8px);
+    opacity: 0.84;
+    transform: translateY(0.5px);
+  }
+  100% {
+    filter: blur(0);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-origami-unfold {
+  animation: origami-unfold 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-style: preserve-3d;
+  transform-origin: top center;
+}
+
+.zen-ink-surface.is-typing .ProseMirror {
+  animation: zen-ink-bleed 100ms ease-out both;
+}
+
+.zen-ink-surface .ProseMirror {
+  will-change: filter, opacity, transform;
+}
+
+.sticky-peel {
+  position: relative;
+  overflow: hidden;
+}
+
+.sticky-peel::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-top-left-radius: 2rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.78) 38%, rgba(0, 0, 0, 0.2) 100%);
+  box-shadow: -10px -10px 20px rgba(0, 0, 0, 0.12);
+  transform-origin: bottom right;
+  transform: translate(12px, 12px) rotate(0deg);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
+
+.sticky-peel::before {
+  content: '';
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-top-left-radius: 1.4rem;
+  background: rgba(0, 0, 0, 0.14);
+  filter: blur(10px);
+  transform: translate(10px, 10px);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sticky-peel:hover::after,
+.sticky-peel:focus-visible::after,
+.sticky-peel.group:hover::after {
+  transform: translate(0, 0) rotate(-14deg);
+  box-shadow: -12px -12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.sticky-peel:hover::before,
+.sticky-peel:focus-visible::before,
+.sticky-peel.group:hover::before {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+.sticky-peel-dark::after {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 38%, rgba(0, 0, 0, 0.45) 100%);
 }
 
 .glass-panel {
@@ -93,5 +209,37 @@
   transform: translateY(1px);
 }
 
-::-webkit-scrollbar { display: none; }
-* { -ms-overflow-style: none; scrollbar-width: none; }
+* {
+  -ms-overflow-style: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s ease;
+}
+
+*:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.7);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(71, 85, 105, 0.9);
+}

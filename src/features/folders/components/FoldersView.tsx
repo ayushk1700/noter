@@ -50,7 +50,7 @@ export default function FoldersView({
               <div 
                 key={folder.id} 
                 onClick={() => onFolderClick(folder.id)}
-                className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-[2rem] p-8 h-48 cursor-pointer shadow-sm hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 ease-out group flex flex-col justify-between"
+                className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-[2rem] p-8 h-48 cursor-pointer shadow-sm hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 ease-out group flex flex-col justify-between sticky-peel"
               >
                 <div className="flex justify-between items-start">
                   <span className="font-extrabold text-2xl text-gray-900 tracking-tight">{folder.name}</span>

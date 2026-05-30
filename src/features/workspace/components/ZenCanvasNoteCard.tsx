@@ -1,9 +1,12 @@
 import React, { ReactNode } from 'react';
 import { Link2, Maximize2 } from 'lucide-react';
 import { ZenCanvasItem } from '@/features/workspace/components/ZenCanvas';
+import { Note } from '@/shared/lib/types';
+import ContentLinkPreviewSurface from '@/shared/components/ContentLinkPreviewSurface';
 
 interface ZenCanvasNoteCardProps {
   item: ZenCanvasItem;
+  notes?: Note[];
   isActive: boolean;
   isAbstracted: boolean;
   interactionMode: string;
@@ -22,6 +25,7 @@ export default function ZenCanvasNoteCard({
   themeMode = 'light',
   onItemDoubleClick,
   renderItemContent,
+  notes = [],
 }: ZenCanvasNoteCardProps) {
   const isDark = themeMode === 'dark';
   const baseCardClass = isDark
@@ -75,7 +79,12 @@ export default function ZenCanvasNoteCard({
         <div className="flex flex-col h-full pointer-events-none">
           <h3 className="text-xl font-bold mb-3 tracking-tight opacity-90 truncate">{item.title}</h3>
           <div className={`transition-opacity duration-500 overflow-hidden flex-1 ${isAbstracted ? 'opacity-0' : 'opacity-100'}`}>
-            <p className="text-sm leading-relaxed opacity-80 whitespace-pre-wrap line-clamp-6" dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+            <ContentLinkPreviewSurface
+              html={item.content || ''}
+              notes={notes}
+              themeMode={isDark ? 'dark' : 'light'}
+              contentClassName="text-sm leading-relaxed opacity-80 whitespace-pre-wrap line-clamp-6"
+            />
           </div>
         </div>
       )}

@@ -8,12 +8,13 @@ import {
 import { Note, Attachment } from '@/shared/lib/types';
 import { useState, useEffect, useRef } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
-import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
 import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
+import { CustomTaskItem } from '@/features/editor/tiptap/CustomTaskItem';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
+import Dropcursor from '@tiptap/extension-dropcursor';
 import { Exporter } from '@/features/editor/lib/Exporter';
 import { SlashCommand } from '@/features/editor/tiptap/SlashCommand';
 import { PageExtension } from '@/features/editor/tiptap/PageExtension';
@@ -26,9 +27,18 @@ import AttachmentNode from '@/features/workspace/components/AttachmentNode';
 import GlobalNavbar from '@/shared/components/GlobalNavbar';
 import EditorHeader from './EditorHeader';
 import DragHandleOverlay from './DragHandleOverlay';
+import EditorBubbleMenu from './EditorBubbleMenu';
 import { Column, ColumnBlock } from '@/features/editor/tiptap/ColumnExtension';
 import { BlockId } from '@/features/editor/tiptap/BlockIdExtension';
+import { ToggleBlockExtension } from '@/features/editor/tiptap/ToggleBlockExtension';
+import { ImageUploadExtension } from '@/features/editor/tiptap/ImageUploadExtension';
+import { BookmarkExtension } from '@/features/editor/tiptap/BookmarkExtension';
+import { TableExtensions } from '@/features/editor/tiptap/TableExtension';
+import { CodeBlockExtension } from '@/features/editor/tiptap/CodeBlockExtension';
 import SearchModal from '@/shared/components/SearchModal';
+import { getEditorSurfaceClassName } from '../lib/editorSurface';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import ContentLinkPreviewSurface from '@/shared/components/ContentLinkPreviewSurface';
 
 interface EditorViewProps {
   note: Note;
@@ -89,17 +99,26 @@ export default function EditorView({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [isZenTyping, setIsZenTyping] = useState(false);
   
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const syncContentFrameRef = useRef<number | null>(null);
+  const zenTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [anchorPositions, setAnchorPositions] = useState<Record<string, number>>({});
   const editorScrollRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const editorSurfaceClassName = getEditorSurfaceClassName({
+    isFocusMode: zenMode,
+    prefersReducedMotion,
+    themeMode,
+  });
 
-  // Ctrl+K global search shortcut
+  // Ctrl+Shift+K search shortcut (kept separate from the global command palette)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setShowSearch(prev => !prev);
       }
@@ -126,6 +145,8 @@ export default function EditorView({
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (syncContentFrameRef.current !== null) cancelAnimationFrame(syncContentFrameRef.current);
+      if (zenTypingTimeoutRef.current) clearTimeout(zenTypingTimeoutRef.current);
     };
   }, []);
 
@@ -137,8 +158,14 @@ export default function EditorView({
   const editor = useEditor({
     extensions: [
       BlockId,
+      ToggleBlockExtension,
+      ImageUploadExtension,
+      BookmarkExtension,
       ColumnBlock,
       Column,
+      Dropcursor.configure({ color: '#3b82f6', width: 2 }),
+      ...TableExtensions,
+      CodeBlockExtension,
       StarterKit.configure({
         listItem: false,
       }),
@@ -146,6 +173,16 @@ export default function EditorView({
       TextAlign.configure({
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right'],
+      }),
+      Link.configure({
+        openOnClick: false,
+        linkOnPaste: true,
+        autolink: true,
+        HTMLAttributes: {
+          class: 'text-indigo-600 underline decoration-indigo-300 decoration-2 underline-offset-2 hover:text-indigo-700 hover:decoration-indigo-400 transition-colors',
+          rel: 'noopener noreferrer',
+          target: '_blank',
+        },
       }),
       ZoomableListItem.configure({
         onZoomBullet: (title, node) => {
@@ -158,7 +195,7 @@ export default function EditorView({
         }
       }),
       TaskList,
-      TaskItem.configure({
+      CustomTaskItem.configure({
         nested: true,
       }),
       PageExtension.configure({
@@ -173,6 +210,7 @@ export default function EditorView({
       Mention.configure({
         HTMLAttributes: {
           class: 'mention bg-indigo-100 text-indigo-700 px-1 py-0.5 rounded cursor-pointer hover:bg-indigo-200 transition-colors',
+          'data-type': 'mention',
         },
         renderLabel({ options, node }) {
           return `${options.suggestion.char}${node.attrs.label ?? node.attrs.id}`;
@@ -186,6 +224,11 @@ export default function EditorView({
     content: note.content,
     onUpdate: ({ editor }) => {
       setIsSaving(true);
+      if (zenMode && !prefersReducedMotion) {
+        setIsZenTyping(true);
+        if (zenTypingTimeoutRef.current) clearTimeout(zenTypingTimeoutRef.current);
+        zenTypingTimeoutRef.current = setTimeout(() => setIsZenTyping(false), 110);
+      }
       onContentChange(editor.getHTML());
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
@@ -235,9 +278,23 @@ export default function EditorView({
   }, [editor, onCreateSubPage]);
 
   useEffect(() => {
-    if (editor && editor.getHTML() !== note.content) {
-      editor.commands.setContent(note.content, { emitUpdate: false });
+    if (!editor || editor.getHTML() === note.content) return;
+
+    if (syncContentFrameRef.current !== null) {
+      cancelAnimationFrame(syncContentFrameRef.current);
     }
+
+    syncContentFrameRef.current = requestAnimationFrame(() => {
+      editor.commands.setContent(note.content, { emitUpdate: false });
+      syncContentFrameRef.current = null;
+    });
+
+    return () => {
+      if (syncContentFrameRef.current !== null) {
+        cancelAnimationFrame(syncContentFrameRef.current);
+        syncContentFrameRef.current = null;
+      }
+    };
   }, [note.content, editor]);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -530,124 +587,16 @@ export default function EditorView({
              )
           })}
 
-          {editor && (
-            <BubbleMenu 
-              editor={editor} 
-              className="flex items-center gap-1 bg-neutral-950/95 border border-neutral-880/60 rounded-xl px-2 py-1.5 shadow-2xl z-50 transition-all duration-200"
-            >
-              <button
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('bold') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Bold"
-              >
-                <Bold size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('italic') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Italic"
-              >
-                <Italic size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleUnderline().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('underline') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Underline"
-              >
-                <UnderlineIcon size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleStrike().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('strike') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Strikethrough"
-              >
-                <Strikethrough size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleCode().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('code') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Inline Code"
-              >
-                <Code size={13} />
-              </button>
+          {editor && <EditorBubbleMenu editor={editor} />}
 
-              <div className="w-px h-4 bg-neutral-800 mx-1" />
-
-              <button
-                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Heading 1"
-              >
-                <Heading1 size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Heading 2"
-              >
-                <Heading2 size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Heading 3"
-              >
-                <Heading3 size={13} />
-              </button>
-
-              <div className="w-px h-4 bg-neutral-800 mx-1" />
-
-              <button
-                onClick={() => editor.chain().focus().toggleBulletList().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('bulletList') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Bullet List"
-              >
-                <List size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('orderedList') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Numbered List"
-              >
-                <ListOrdered size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleTaskList().run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive('taskList') ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Todo Checklist"
-              >
-                <CheckSquare size={13} />
-              </button>
-
-              <div className="w-px h-4 bg-neutral-800 mx-1" />
-
-              <button
-                onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Align Left"
-              >
-                <AlignLeft size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Align Center"
-              >
-                <AlignCenter size={13} />
-              </button>
-              <button
-                onClick={() => editor.chain().focus().setTextAlign('right').run()}
-                className={`p-1.5 rounded-lg hover:bg-neutral-800 transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'text-[#FF7D54] bg-neutral-800' : 'text-neutral-400'}`}
-                title="Align Right"
-              >
-                <AlignRight size={13} />
-              </button>
-            </BubbleMenu>
-          )}
-
-          <div className={`flex-1 min-h-[400px] prose prose-lg max-w-none focus:outline-none ${themeMode === 'dark' ? 'prose-invert text-neutral-300' : 'text-gray-800'}`}>
+          <ContentLinkPreviewSurface
+            notes={notes}
+            onOpenNote={onOpenNote}
+            themeMode={themeMode}
+            className={`${editorSurfaceClassName} ${zenMode ? `zen-ink-surface ${isZenTyping ? 'is-typing' : ''}` : ''}`}
+          >
             <EditorContent editor={editor} />
-          </div>
+          </ContentLinkPreviewSurface>
 
         {note.attachments && note.attachments.length > 0 && (
           <div className="mt-12 pt-8 border-t border-gray-100">
