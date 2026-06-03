@@ -4,14 +4,8 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_APP_NAME": {
-      "description": "Application name",
-      "required": false
-    },
-    "NEXT_PUBLIC_APP_DESCRIPTION": {
-      "description": "Application description",
-      "required": false
-    }
+    "NEXT_PUBLIC_APP_NAME": "Noter",
+    "NEXT_PUBLIC_APP_DESCRIPTION": "A note taking application"
   },
   "regions": ["sfo1"],
   "functions": {
